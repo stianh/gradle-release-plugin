@@ -130,7 +130,7 @@ class GitVersion {
         def currentBranch = getCurrentBranchName()
         def latestTagName = getLatestTag(currentBranch)
         if (latestTagName == null) {
-            throw new RuntimeException("No releases for ${currentBranch} usage: gradle release -Pversion=${currentBranch}-REL-1")
+			return "$currentBranch-REL-1"
         }
         def tagNameParts = latestTagName.split('-')
         def newVersion = tagNameParts[-1].toInteger() + 1
