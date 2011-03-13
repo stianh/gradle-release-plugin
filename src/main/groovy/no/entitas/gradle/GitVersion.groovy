@@ -1,5 +1,6 @@
 package no.entitas.gradle
 
+import java.text.SimpleDateFormat
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.process.internal.ExecException
@@ -9,28 +10,24 @@ class GitVersion {
     String versionNumber
     Boolean release = null
 
-    def GitVersion(project, String userVersion) {
+    def GitVersion(project) {
         this.project = project
 
-        if (userVersion != 'unspecified') {
-            release = true;
-            this.versionNumber = userVersion
-        } else {
-            project.gradle.taskGraph.whenReady {graph ->
-                if (graph.hasTask(':releasePrepare')) {
-                    release = true
-                    this.versionNumber = getNextTagName()
-                }
-                else if(isOnTag() && !hasLocalModifications()){
-                    release = true
-                    this.versionNumber = getCurrentVersion()
-                }
-                else{
-                     release = false
-                    this.versionNumber = getCurrentBranchName() + '-SNAPSHOT'
-                }
+        project.gradle.taskGraph.whenReady {graph ->
+            if (graph.hasTask(':releasePrepare')) {
+                release = true
+                this.versionNumber = getNextTagName()
+            }
+            else if (isOnTag() && !hasLocalModifications()) {
+                release = true
+                this.versionNumber = getCurrentVersion()
+            }
+            else {
+                release = false
+                this.versionNumber = getCurrentBranchName() + '-SNAPSHOT'
             }
         }
+
     }
 
     String toString() {
@@ -54,8 +51,8 @@ class GitVersion {
     }
 
     def releasePrepare() {
-        if(hasLocalModifications()){
-            throw new RuntimeException('Uncommited changes found in the source tree:\n' + stdout.toString())
+        if (hasLocalModifications()) {
+            throw new RuntimeException('Uncommited changes found in the source tree:\n' + getLocalModifications())
         }
         if (isOnTag()) {
             throw new RuntimeException('No changes since last tag.')
@@ -65,8 +62,8 @@ class GitVersion {
     }
 
     def releasePerform() {
-        if(hasLocalModifications()){
-             throw new RuntimeException('Uncommited changes found in the source tree:\n' + stdout.toString())
+        if (hasLocalModifications()) {
+            throw new RuntimeException('Uncommited changes found in the source tree:\n' + getLocalModifications())
         }
         if (!isOnTag()) {
             throw new RuntimeException('Can not do releasePerform from other than a tag commit.')
@@ -75,18 +72,20 @@ class GitVersion {
     }
 
 
+	def getLocalModifications() {
+		  println 'checking for modifications'
+	        def stdout = new ByteArrayOutputStream()
+	        project.exec {
+	            executable = 'git'
+	            args = ['status', '--porcelain']
+	            standardOutput = stdout
+	        }
+	        if (stdout.toByteArray().length > 0) {
+	            return stdout.toString()
+	        }
+	}
     def hasLocalModifications() {
-        println 'checking for modifications'
-        def stdout = new ByteArrayOutputStream()
-        project.exec {
-            executable = 'git'
-            args = ['status', '--porcelain']
-            standardOutput = stdout
-        }
-        if (stdout.toByteArray().length > 0) {
-            return true
-        }
-        return false
+      getLocalModifications() == null ? false : true
     }
 
     def isOnTag() {
@@ -113,7 +112,7 @@ class GitVersion {
             }
             stdout.toString().replaceAll("\\n", "")
         } catch (ExecException e) {
-           throw new RuntimeException("Not on a tag.")
+            throw new RuntimeException("Not on a tag.")
         }
     }
 
