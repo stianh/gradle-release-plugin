@@ -8,8 +8,8 @@ class GitReleasePlugin implements Plugin<Project> {
 
 	def void apply(Project project) { 
 		project.subprojects*.apply plugin: 'java'
-		def ver = new GitVersion(project)
-		project.version = ver
+		def gitVersion = new GitVersion(project)
+		project.version = gitVersion
 
 		project.task('cleanAll') << {}		
 		Task cleanAllTask = project.tasks.getByName('cleanAll')
@@ -20,13 +20,13 @@ class GitReleasePlugin implements Plugin<Project> {
 		buildAll.dependsOn([cleanAllTask, project.subprojects*.build])
 		
 		project.task('releasePrepare') << {
-	      ver.releasePrepare()
+	      gitVersion.releasePrepare()
 		}
 		Task releasePrepareTask = project.tasks.getByName('releasePrepare')
 		releasePrepareTask.dependsOn(buildAll)
 		
 		project.task('releasePerform') << {
-		  ver.releasePerform()
+		  gitVersion.releasePerform()
 		}
 		Task performReleaseTask = project.tasks.getByName('releasePerform')
 		performReleaseTask.dependsOn(releasePrepareTask) 	
