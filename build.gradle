@@ -1,4 +1,7 @@
 apply plugin: 'groovy'
+apply plugin: 'maven'
+version = '1.0-SNAPSHOT'
+group = 'no.entitas'
 repositories{
   mavenCentral()
 }
@@ -7,3 +10,11 @@ dependencies{
   groovy "org.codehaus.groovy:groovy-all:1.7.4"
   compile gradleApi()
 }
+
+def localMavenRepo = 'file://' + new File(System.getProperty('user.home'), '.m2/repository').absolutePath
+uploadArchives {
+    repositories.mavenDeployer {
+        repository(url: localMavenRepo)
+    }
+}
+
