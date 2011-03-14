@@ -1,5 +1,5 @@
 package no.entitas.gradle
-import no.nos.gradle.GitVersion
+import no.entitas.gradle.GitVersion
 import org.gradle.api.Project
 import org.gradle.api.Plugin
 import org.gradle.api.Task;
@@ -7,6 +7,7 @@ import org.gradle.api.Task;
 class GitReleasePlugin implements Plugin<Project> {
 
 	def void apply(Project project) { 
+		project.convention.plugins.gitRelease = new GitReleasePluginConvention()
 		project.subprojects*.apply plugin: 'java'
 		def gitVersion = new GitVersion(project)
 		project.version = gitVersion
@@ -29,6 +30,16 @@ class GitReleasePlugin implements Plugin<Project> {
 		  gitVersion.releasePerform()
 		}
 		Task performReleaseTask = project.tasks.getByName('releasePerform')
-		performReleaseTask.dependsOn(releasePrepareTask) 	
+		performReleaseTask.dependsOn([releasePrepareTask,project.subprojects*.uploadArchives]) 	
+	}
+	
+	class GitReleasePluginConvention {
+	    String snapshotDistributionUrl
+		String releaseDistributionUrl
+
+	    def gitRelease(Closure closure) {
+	        closure.delegate = this
+	        closure() 
+	    }
 	}
 }
