@@ -1,5 +1,5 @@
 package no.entitas.gradle
-
+import no.entitas.gradle.VersionNumber
 import java.text.SimpleDateFormat
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -15,6 +15,7 @@ class GitVersion {
 
         project.gradle.taskGraph.whenReady {graph ->
             if (graph.hasTask(':releasePrepare')) {
+				releasePreConditions()
                 release = true
                 this.versionNumber = getNextTagName()
             }
@@ -30,10 +31,18 @@ class GitVersion {
 
     }
 
+	def releasePreConditions(){
+		if (hasLocalModifications()) {
+            throw new RuntimeException('Uncommited changes found in the source tree:\n' + getLocalModifications())
+        }
+        if (isOnTag()) {
+            throw new RuntimeException('No changes since last tag.')
+        }
+	}
+
     String toString() {
         versionNumber
     }
-
 
     boolean isRelease() {
         if (release == null) {
@@ -42,32 +51,13 @@ class GitVersion {
         return release
     }
 
-    String getDistributionUrl() {
-        if (release) {
-            'http://releases'
-        } else {
-            'http://snapshots'
-        }
-    }
 
     def releasePrepare() {
-        if (hasLocalModifications()) {
-            throw new RuntimeException('Uncommited changes found in the source tree:\n' + getLocalModifications())
-        }
-        if (isOnTag()) {
-            throw new RuntimeException('No changes since last tag.')
-        }
         def newTag = versionNumber
         tag(newTag, "Release Tag: ${newTag}")
     }
 
     def releasePerform() {
-        if (hasLocalModifications()) {
-            throw new RuntimeException('Uncommited changes found in the source tree:\n' + getLocalModifications())
-        }
-        if (!isOnTag()) {
-            throw new RuntimeException('Can not do releasePerform from other than a tag commit.')
-        }
         pushTags()
     }
 
@@ -110,7 +100,7 @@ class GitVersion {
                 args = ['describe', '--exact-match', 'HEAD']
                 standardOutput = stdout
             }
-            stdout.toString().replaceAll("\\n", "")
+            new VersionNumber(stdout.toString().replaceAll("\\n", ""))
         } catch (ExecException e) {
             throw new RuntimeException("Not on a tag.")
         }
@@ -128,25 +118,24 @@ class GitVersion {
 
     def getNextTagName() {
         def currentBranch = getCurrentBranchName()
-        def latestTagName = getLatestTag(currentBranch)
-        if (latestTagName == null) {
+        def latestTagVersion = getLatestTag(currentBranch)
+        if (latestTagVersion == null) {
 			return "$currentBranch-REL-1"
         }
-        def tagNameParts = latestTagName.split('-')
-        def newVersion = tagNameParts[-1].toInteger() + 1
-        latestTagName.replaceAll(tagNameParts[-1], newVersion.toString())
+		latestTagVersion.nextVersionTag()
     }
 
     def getLatestTag(String currentBranch) {
-        println "Getting latest tag for branch ${currentBranch}"
         def tagSearchPattern = "${currentBranch}-REL-*"
-        def tags = getTags(tagSearchPattern)
-        if (tags != null) {
-            tags[-1]
+        def tags = getTagNames(tagSearchPattern)
+        
+		if (tags != null) {
+			def versionNumbers = tags.collect{new VersionNumber(it)}
+            groovy.util.GroovyCollections.max(versionNumbers)
         }
     }
 
-    def getTags(String tagSearchPattern) {
+    def getTagNames(String tagSearchPattern) {
         def stdout = new ByteArrayOutputStream()
         project.exec {
             executable = 'git'
