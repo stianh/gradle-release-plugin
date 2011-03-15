@@ -8,29 +8,42 @@ class GitReleasePlugin implements Plugin<Project> {
 
 	def void apply(Project project) { 
 		project.convention.plugins.gitRelease = new GitReleasePluginConvention()
-		project.subprojects*.apply plugin: 'java'
 		def gitVersion = new GitVersion(project)
 		project.version = gitVersion
+		
+		if(project.subprojects.isEmpty()){
+			Task releasePrepareTask = project.task('releasePrepare') << {
+	      		gitVersion.releasePrepare()
+			}
+			releasePrepareTask.dependsOn(project.build)
+		
+			Task performReleaseTask = project.task('releasePerform') << {
+		  		gitVersion.releasePerform()
+			}
+			performReleaseTask.dependsOn([releasePrepareTask,project.uploadArchives]) 	
+		}else{
+			/*TODO: The subprojects closure configuration is not applied at the time when apply is called for this plugin.
+			  The subprojects needs the java plugin at this time to resovle clean, build and the uploadArtifacts tasks.
+			  Investigate if this some how can be done lazy.
+			*/
+			project.subprojects*.apply plugin: 'java'
 
-		project.task('cleanAll') << {}		
-		Task cleanAllTask = project.tasks.getByName('cleanAll')
-		cleanAllTask.dependsOn(project.subprojects*.clean)
+			Task cleanAllTask = project.task('cleanAll') << {}		
+			cleanAllTask.dependsOn(project.subprojects*.clean)
 		
-		project.task('buildAll') << {}
-		Task buildAll = project.tasks.getByName('buildAll')
-		buildAll.dependsOn([cleanAllTask, project.subprojects*.build])
+			Task buildAll = project.task('buildAll') << {}
+			buildAll.dependsOn([cleanAllTask, project.subprojects*.build])
 		
-		project.task('releasePrepare') << {
-	      gitVersion.releasePrepare()
+			Task releasePrepareTask = project.task('releasePrepare') << {
+	      		gitVersion.releasePrepare()
+			}
+			releasePrepareTask.dependsOn(buildAll)
+		
+			Task performReleaseTask = project.task('releasePerform') << {
+		  		gitVersion.releasePerform()
+			}
+			performReleaseTask.dependsOn([releasePrepareTask,project.subprojects*.uploadArchives]) 	
 		}
-		Task releasePrepareTask = project.tasks.getByName('releasePrepare')
-		releasePrepareTask.dependsOn(buildAll)
-		
-		project.task('releasePerform') << {
-		  gitVersion.releasePerform()
-		}
-		Task performReleaseTask = project.tasks.getByName('releasePerform')
-		performReleaseTask.dependsOn([releasePrepareTask,project.subprojects*.uploadArchives]) 	
 	}
 	
 	class GitReleasePluginConvention {
