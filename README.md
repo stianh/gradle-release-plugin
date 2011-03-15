@@ -3,7 +3,7 @@ Gradle Git release plugin
 This is a very simple gradle plugin for automating release management when using git as vcs.
 The plugin is responsible for knowing the version to build at all times.
 
-In the case of a normal gradle build, the plugin generates a version name based on the current branch name.(${branchName}-SNAPSHOT)
+In the case of a normal gradle build, the plugin generates a version name based on the current branch name ${branchName}-SNAPSHOT.
 
 If you run the task releasePrepare, the plugin will query git for the latest release tag and add one.
 The artifacts will have a version name like master-REL-1 (if this is the first time you run :releasePrepare)
@@ -69,14 +69,14 @@ uploadArchives {
 **Notice:** In a multi-project build, the gitrelease plugin should only be applied at the top level. 
 
 Tasks:
-- **releasePrepare**
-  - Checks that there are no local modifications. (Git status)
-  - Checks that your current HEAD is not a release tag.
-  - The projects are buildt with version resolved from the latest git release tag + 1.
-  - Creates a git tag for you current head named ${branchName}-REL-${version}
-- **releasPerform**
-  - This task depends on the :releasePrepare task, 
-  - Depends on uploadArtifacts and push the tag created in releasePrepare.
+**releasePrepare**
+* Checks that there are no local modifications. (Git status)
+* Checks that your current HEAD is not a release tag.
+* The projects are buildt with version resolved from the latest git release tag + 1.
+* Creates a git tag for you current head named ${branchName}-REL-${version}
+**releasPerform**
+* This task depends on the :releasePrepare task, 
+* Depends on uploadArtifacts and push the tag created in releasePrepare.
 
 Add the shell variable ENSIME_HOME in TextMate -> Preferences... -> Advanced -> Shell Variables to the root of your ENSIME distribution (This would be the path to the folder you just unpacked). For me this is <code>/Users/Mads/dev/tools/emacs\_config/ensime\_2.8.1-0.3.8</code>
 
