@@ -77,8 +77,8 @@ Tasks:
 * Creates a git tag for you current head named ${branchName}-REL-${version}  
 
 **releasePerform**  
-* This task depends on the :releasePrepare task. 
-* Depends on uploadArtifacts and push the tag created in releasePrepare.  
+* This task depends on the :releasePrepare task.  
+* Depends on uploadArtifacts and perform a git push tags.  
 
 Known issues and limitations:
 -------------
