@@ -28,7 +28,6 @@ class GitVersion {
                 this.versionNumber = getCurrentBranchName() + '-SNAPSHOT'
             }
         }
-
     }
 
 	def releasePreConditions(){
@@ -63,7 +62,6 @@ class GitVersion {
 
 
 	def getLocalModifications() {
-		  println 'checking for modifications'
 	        def stdout = new ByteArrayOutputStream()
 	        project.exec {
 	            executable = 'git'
