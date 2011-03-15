@@ -15,16 +15,16 @@ class GitReleasePlugin implements Plugin<Project> {
 			Task releasePrepareTask = project.task('releasePrepare') << {
 	      		gitVersion.releasePrepare()
 			}
-			releasePrepareTask.dependsOn(project.build)
+			releasePrepareTask.dependsOn(project.tasks.build)
 		
 			Task performReleaseTask = project.task('releasePerform') << {
 		  		gitVersion.releasePerform()
 			}
-			performReleaseTask.dependsOn([releasePrepareTask,project.uploadArchives]) 	
+			performReleaseTask.dependsOn([releasePrepareTask,project.tasks.uploadArchives]) 	
 		}else{
 			/*TODO: The subprojects closure configuration is not applied at the time when apply is called for this plugin.
-			  The subprojects needs the java plugin at this time to resovle clean, build and the uploadArtifacts tasks.
-			  Investigate if this some how can be done lazy.
+			  The subprojects needs the java plugin at this time to resolve clean, build and the uploadArtifacts tasks.
+			  Investigate if this somehow can be done lazy.
 			*/
 			project.subprojects*.apply plugin: 'java'
 
