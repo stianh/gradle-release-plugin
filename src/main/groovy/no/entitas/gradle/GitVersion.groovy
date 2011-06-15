@@ -1,6 +1,5 @@
 package no.entitas.gradle
-import no.entitas.gradle.VersionNumber
-import java.text.SimpleDateFormat
+
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.process.internal.ExecException
@@ -9,6 +8,7 @@ class GitVersion {
     private final Project project
     String versionNumber
     Boolean release = null
+    def releaseTagPattern = ~/^\S+-REL-\d+$/
 
     def GitVersion(project) {
         this.project = project
@@ -19,7 +19,7 @@ class GitVersion {
                 release = true
                 this.versionNumber = getNextTagName()
             }
-            else if (isOnTag() && !hasLocalModifications()) {
+            else if (isOnReleaseTag() && !hasLocalModifications()) {
                 release = true
                 this.versionNumber = getCurrentVersion()
             }
@@ -29,12 +29,12 @@ class GitVersion {
             }
         }
     }
-
+    //TODO:Ensure that we are on a branch
 	def releasePreConditions(){
 		if (hasLocalModifications()) {
             throw new RuntimeException('Uncommited changes found in the source tree:\n' + getLocalModifications())
         }
-        if (isOnTag()) {
+        if (isOnReleaseTag()) {
             throw new RuntimeException('No changes since last tag.')
         }
 	}
@@ -76,7 +76,7 @@ class GitVersion {
       getLocalModifications() == null ? false : true
     }
 
-    def isOnTag() {
+    def isOnReleaseTag() {
         def stdout = new ByteArrayOutputStream()
         try {
             def x = project.exec {
@@ -84,7 +84,9 @@ class GitVersion {
                 args = ['describe', '--exact-match', 'HEAD']
                 standardOutput = stdout
             }
-            return true
+            def tagName = stdout.toString().replaceAll("\\n","")
+
+            return releaseTagPattern.matcher(tagName).matches()
         } catch (ExecException e) {
             return false
         }
