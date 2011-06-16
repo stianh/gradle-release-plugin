@@ -82,58 +82,32 @@ class GitVersion {
 
 
 	def getLocalModifications() {
-	        def stdout = new ByteArrayOutputStream()
-	        project.exec {
-	            executable = 'git'
-	            args = ['status', '--porcelain']
-	            standardOutput = stdout
-	        }
-	        if (stdout.toByteArray().length > 0) {
-	            return stdout.toString()
-	        }
+	    gitExec(['status', '--porcelain'])
 	}
     def hasLocalModifications() {
       getLocalModifications() == null ? false : true
     }
 
     def isOnReleaseTag() {
-        def stdout = new ByteArrayOutputStream()
         try {
-            def x = project.exec {
-                executable = 'git'
-                args = ['describe', '--exact-match', 'HEAD']
-                standardOutput = stdout
-            }
-            def tagName = stdout.toString().replaceAll("\\n","")
-
-            return releaseTagPattern.matcher(tagName).matches()
+            def gitResult = gitExec(['describe', '--exact-match', 'HEAD'], true)
+            return releaseTagPattern.matcher(gitResult).matches()
         } catch (ExecException e) {
             return false
         }
     }
 
     def getCurrentVersion() {
-        def stdout = new ByteArrayOutputStream()
-        try {
-            def x = project.exec {
-                executable = 'git'
-                args = ['describe', '--exact-match', 'HEAD']
-                standardOutput = stdout
-            }
-            new VersionNumber(stdout.toString().replaceAll("\\n", ""))
+        try{
+            def result = gitExec(['describe', '--exact-match', 'HEAD'],true)
+             new VersionNumber(result)
         } catch (ExecException e) {
             throw new RuntimeException("Not on a tag.")
         }
     }
 
     def getCurrentBranchName() {
-        def stdout = new ByteArrayOutputStream()
-        project.exec {
-            executable = 'git'
-            args = ['name-rev', '--name-only', 'HEAD']
-            standardOutput = stdout
-        }
-        stdout.toString().replaceAll("\\n", "")
+        gitExec(['name-rev', '--name-only', 'HEAD'],true)
     }
 
     def getNextTagName() {
@@ -156,31 +130,38 @@ class GitVersion {
     }
 
     def getTagNames(String tagSearchPattern) {
-        def stdout = new ByteArrayOutputStream()
-        project.exec {
-            executable = 'git'
-            args = ['tag', '-l', tagSearchPattern]
-            standardOutput = stdout
-        }
-        if (stdout.toByteArray().length > 0) {
-            def allReleases = stdout.toString()
-            allReleases.split('\n')
+        def allReleaseTagNames = gitExec(['tag', '-l', tagSearchPattern])
+        if(allReleaseTagNames){
+            allReleaseTagNames.split('\n')
         }
     }
 
     def tag(String tag, String message) {
         println "tagging with $tag"
-        project.exec {
-            executable = 'git'
-            args = ['tag', '-a', tag, '-m', message]
-        }
+        gitExec(['tag', '-a', tag, '-m', message])
     }
 
     def pushTags() {
         println "pushing tags"
+        gitExec(['push', '--tags'])
+    }
+
+    def gitExec(List gitArgs, boolean removeNewLines = false) {
+        def stdout = new ByteArrayOutputStream()
         project.exec {
             executable = 'git'
-            args = ['push', '--tags']
+            args = gitArgs
+            standardOutput = stdout
+        }
+        if (stdout.toByteArray().length > 0) {
+            def result = stdout.toString()
+            if (removeNewLines) {
+                stdout.toString().replaceAll("\\n", "")
+            } else {
+                result
+            }
+        } else {
+            null
         }
     }
 }
