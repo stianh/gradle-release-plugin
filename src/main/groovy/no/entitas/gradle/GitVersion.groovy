@@ -37,7 +37,27 @@ class GitVersion {
         if (isOnReleaseTag()) {
             throw new RuntimeException('No changes since last tag.')
         }
+
+        def dependencies = getSnapshotDependencies()
+        if (!dependencies.isEmpty()) {
+            throw new RuntimeException('Project contains SNAPSHOT dependencies: ' + dependencies)
+        }
 	}
+
+    def getSnapshotDependencies() {
+        def deps = [] as Set
+        project.allprojects {
+            it.configurations.all {
+                it.resolvedConfiguration.resolvedArtifacts.each { a ->
+                    it = a.resolvedDependency
+                    if (it.moduleVersion.contains("SNAPSHOT")) {
+                        deps.add("${it.moduleGroup}:${it.moduleName}:${it.moduleVersion}")
+                    }
+                }
+            }
+        }
+        deps
+    }
 
     String toString() {
         versionNumber
