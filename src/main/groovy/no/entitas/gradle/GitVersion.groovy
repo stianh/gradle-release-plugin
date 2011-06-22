@@ -34,8 +34,13 @@ class GitVersion {
 		if (hasLocalModifications()) {
             throw new RuntimeException('Uncommited changes found in the source tree:\n' + getLocalModifications())
         }
+
         if (isOnReleaseTag()) {
             throw new RuntimeException('No changes since last tag.')
+        }
+
+        if(branchIsAheadOfRemote()){
+            throw new RuntimeException('Project contains unpushed commits');
         }
 
         def dependencies = getSnapshotDependencies()
@@ -43,6 +48,10 @@ class GitVersion {
             throw new RuntimeException('Project contains SNAPSHOT dependencies: ' + dependencies)
         }
 	}
+
+    boolean branchIsAheadOfRemote() {
+       return gitExec(['status']).contains('Your branch is ahead of')
+    }
 
     def getSnapshotDependencies() {
         def deps = [] as Set
