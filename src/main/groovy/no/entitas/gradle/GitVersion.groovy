@@ -31,7 +31,7 @@ class GitVersion {
     }
     //TODO:Ensure that we are on a branch
 	def releasePreConditions(){
-		if (hasLocalModifications()) {
+        if (hasLocalModifications()) {
             throw new RuntimeException('Uncommited changes found in the source tree:\n' + getLocalModifications())
         }
 
@@ -39,33 +39,15 @@ class GitVersion {
             throw new RuntimeException('No changes since last tag.')
         }
 
+
         if(branchIsAheadOfRemote()){
             throw new RuntimeException('Project contains unpushed commits');
         }
 
-        def dependencies = getSnapshotDependencies()
-        if (!dependencies.isEmpty()) {
-            throw new RuntimeException('Project contains SNAPSHOT dependencies: ' + dependencies)
-        }
 	}
 
     boolean branchIsAheadOfRemote() {
        return gitExec(['status']).contains('Your branch is ahead of')
-    }
-
-    def getSnapshotDependencies() {
-        def deps = [] as Set
-        project.allprojects {
-            it.configurations.all {
-                it.resolvedConfiguration.resolvedArtifacts.each { a ->
-                    it = a.resolvedDependency
-                    if (it.moduleVersion.contains("SNAPSHOT")) {
-                        deps.add("${it.moduleGroup}:${it.moduleName}:${it.moduleVersion}")
-                    }
-                }
-            }
-        }
-        deps
     }
 
     String toString() {

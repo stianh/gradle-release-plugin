@@ -35,6 +35,10 @@ class GitReleasePlugin implements Plugin<Project> {
 			buildAll.dependsOn([cleanAllTask, project.subprojects*.build])
 		
 			Task releasePrepareTask = project.task('releasePrepare') << {
+                def dependencies = getSnapshotDependencies(project)
+                if (!dependencies.isEmpty()) {
+                  throw new RuntimeException('Project contains SNAPSHOT dependencies: ' + dependencies)
+                }
 	      		gitVersion.releasePrepare()
 			}
 			releasePrepareTask.dependsOn(buildAll)
@@ -45,6 +49,22 @@ class GitReleasePlugin implements Plugin<Project> {
 			performReleaseTask.dependsOn([releasePrepareTask,project.subprojects*.uploadArchives]) 	
 		}
 	}
+
+    def getSnapshotDependencies(def project) {
+        def deps = [] as Set
+        project.allprojects {
+            it.configurations.all {
+                it.resolvedConfiguration.resolvedArtifacts.each { a ->
+                    def resolvedDep = a.resolvedDependency
+                    if (resolvedDep.moduleVersion.contains("SNAPSHOT")) {
+                        deps.add("${resolvedDep.moduleGroup}:${resolvedDep.moduleName}:${resolvedDep.moduleVersion}")
+                    }
+                }
+            }
+        }
+        deps
+    }
+
 	
 	class GitReleasePluginConvention {
 	    String snapshotDistributionUrl
