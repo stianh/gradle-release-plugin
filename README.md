@@ -1,4 +1,4 @@
-Gradle Git release plugin [Beta]
+Gradle Git release plugin
 ================================
 This is a very simple gradle plugin for automating release management when using git as vcs.  
 The plugin is responsible for knowing the version to build at all times.  
