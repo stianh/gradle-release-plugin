@@ -4,7 +4,7 @@ import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.process.internal.ExecException
 
-class GitVersion {
+class GitVersion implements Version {
     private final Project project
     String versionNumber
     Boolean release = null
