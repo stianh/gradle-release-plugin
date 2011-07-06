@@ -1,5 +1,4 @@
 package no.entitas.gradle
-import java.math.BigDecimal
 
 class VersionNumber implements Comparable{
 	String branchName
