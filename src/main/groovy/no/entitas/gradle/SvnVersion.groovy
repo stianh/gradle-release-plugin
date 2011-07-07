@@ -6,10 +6,12 @@ import org.tmatesoft.svn.core.io.SVNRepositoryFactory
 import org.tmatesoft.svn.core.io.SVNRepository
 import org.tmatesoft.svn.core.internal.io.svn.SVNRepositoryFactoryImpl
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory
+import org.tmatesoft.svn.core.internal.wc.admin.ISVNEntryHandler;
 import org.tmatesoft.svn.core.SVNURL
 import org.tmatesoft.svn.core.wc.SVNCopySource
 import org.tmatesoft.svn.core.wc.SVNRevision
 import org.tmatesoft.svn.core.wc.SVNStatus
+import org.tmatesoft.svn.core.wc.SVNEvent
 
 class SvnVersion implements Version {
     private final Project project
@@ -23,10 +25,8 @@ class SvnVersion implements Version {
         // TODO: Verify that tag for this revision does not already exist
         // TODO: Calculate version-number by looking at matching tags
         // TODO: Perform build
-	}
-    
-	def releasePerform() {
-	    // TODO: Verify that nothing is uncommited
+        
+        // TODO: Verify that nothing is uncommited
         
         def svnClientManager=createSVNClientManager();
         def svnStatus=getStatus(svnClientManager);
@@ -43,13 +43,37 @@ class SvnVersion implements Version {
         println("Branch-name: "+branchName);
         def tagName=branchName+"-REL-"+nextVersionNumber;
         println("Tag to create: "+tagName);
+        svnClientManager.dispose()
+	}
+    
+	def releasePerform() {
+	    // TODO: Verify that nothing is uncommited
+        
+        def svnClientManager=createSVNClientManager();
+        def svnStatus=getStatus(svnClientManager);
+
+        printContentStatus(svnStatus);
+                
+        // TODO: Verify that tag for this revision does not already exist
+
+        // Calculate version-number by looking at matching tags
+        
+        def projectRootURL=getProjectRootURL(svnStatus);
+        def svnRepo=getSVNRepository(projectRootURL);
+        def branchName=getBranchName(svnStatus);
+        def nextVersionNumber=getNextVersionNumber(svnRepo,branchName);
+        
+        println("Branch-name: "+branchName);
+        def tagName=branchName+"-REL-"+nextVersionNumber;
+        println("Tag to create: "+tagName);
         
         // Create tag
         createTag(svnClientManager, svnStatus, tagName);
+        svnClientManager.dispose()
     }
     
     private void printContentStatus(SVNStatus svnStatus) {
-        println(svnStatus.getContentsStatus())
+        println("Contents-status: "+svnStatus.getContentsStatus())
     }
     
     private SVNClientManager createSVNClientManager() {
@@ -104,10 +128,24 @@ class SvnVersion implements Version {
         def tagsUrl=getTagsURL(svnStatus);
         def rev = svnStatus.getRevision();
         def url = svnStatus.URL;
-        def copyClient=svnClientManager.getCopyClient();
         def destURL=SVNURL.parseURIDecoded(tagsUrl+"/"+tagName);
         def copySrc=new SVNCopySource[1];
         copySrc[0]=new SVNCopySource(rev,rev,url)
+        
+        println("Tagging release: "+tagName)
+        def dirsToMake=new SVNURL[1];
+        dirsToMake[0]=destURL;
+        //svnClientManager.getCommitClient().doMkDir(dirsToMake,"Creating tag directory: "+tagName);
+        def copyClient=svnClientManager.getCopyClient()
+        
+//        copyClient.setEventHandler(new ISVNEntryHandler() {
+//            public void handleError(SVNEvent event, double progress){
+//                println("Got event: "+event)
+//            }
+//        });
+        
+        
+        
         copyClient.doCopy(copySrc,destURL,false,false,true,"Tagging release "+tagName,null)
     }
 }
