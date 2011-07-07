@@ -30,7 +30,7 @@ apply plugin: 'gitrelease' // or apply plugin: 'svnrelease'
 
 buildscript {
   repositories {
-    mavenRepo urls: ['file://' + new File(System.getProperty('user.home'), '.m2/repository').absolutePath]
+    mavenLocal()
   }
   dependencies {
     classpath group: 'no.entitas', name: 'gradle-git-release-plugin', version: '1.0-SNAPSHOT'
