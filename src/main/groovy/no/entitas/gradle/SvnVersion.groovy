@@ -37,9 +37,9 @@ class SvnVersion implements Version {
         
         def projectRootURL=getProjectRootURL(svnStatus);
         def svnRepo=getSVNRepository(projectRootURL);
-        def nextVersionNumber=getNextVersionNumber(svnRepo);
-        
         def branchName=getBranchName(svnStatus);
+        def nextVersionNumber=getNextVersionNumber(svnRepo,branchName);
+        
         println("Branch-name: "+branchName);
         def tagName=branchName+"-REL-"+nextVersionNumber;
         println("Tag to create: "+tagName);
@@ -85,19 +85,19 @@ class SvnVersion implements Version {
         return SVNRepositoryFactory.create(SVNURL.parseURIDecoded(projectRootURL) );
     }
     
-    private def int getNextVersionNumber(SVNRepository repository) {
+    private def int getNextVersionNumber(SVNRepository repository, String branchName) {
         def entries = repository.getDir( "tags", -1 , null , (Collection) null );
-        def releaseTagPattern = ~/^\S+-REL-(\d+)$/
+        def releaseTagPattern = ~/^(\S+)-REL-(\d+)$/
         def max=entries.max{it2->
             def matcher=releaseTagPattern.matcher(it2.name);
-            if (matcher.matches()) {
-              Integer.valueOf(matcher.group(1))
+            if (matcher.matches() && branchName.equals(matcher.group(1))) {
+              Integer.valueOf(matcher.group(2))
             } else {
               null
             }
         }
         def matcher=releaseTagPattern.matcher(max.name)
-        int nextVersion=matcher.matches() ? Integer.valueOf(matcher.group(1))+1 : 1;
+        int nextVersion=matcher.matches() ? Integer.valueOf(matcher.group(2))+1 : 1;
     }
     
     private def void createTag(SVNClientManager svnClientManager, SVNStatus svnStatus, String tagName) {
