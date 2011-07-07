@@ -135,17 +135,7 @@ class SvnVersion implements Version {
         println("Tagging release: "+tagName)
         def dirsToMake=new SVNURL[1];
         dirsToMake[0]=destURL;
-        //svnClientManager.getCommitClient().doMkDir(dirsToMake,"Creating tag directory: "+tagName);
-        def copyClient=svnClientManager.getCopyClient()
-        
-//        copyClient.setEventHandler(new ISVNEntryHandler() {
-//            public void handleError(SVNEvent event, double progress){
-//                println("Got event: "+event)
-//            }
-//        });
-        
-        
-        
+        def copyClient=svnClientManager.getCopyClient()        
         copyClient.doCopy(copySrc,destURL,false,false,true,"Tagging release "+tagName,null)
     }
 }
