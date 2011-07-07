@@ -26,19 +26,33 @@ class SvnVersion implements Version {
 	}
     
 	def releasePerform() {
-        // TODO: Verify that nothing is uncommited
+	    // TODO: Verify that nothing is uncommited
+        
+        def svnClientManager=createSVNClientManager();
+        def svnStatus=getStatus(svnClientManager);
+        
         // TODO: Verify that tag for this revision does not already exist
-        // TODO: Calculate version-number by looking at matching tags
-        // TODO: Perform build
-        // TODO: Upload artifacts
-        // TODO: Create tag
+
+        // Calculate version-number by looking at matching tags
+        
+        def projectRootURL=getProjectRootURL(svnStatus);
+        def svnRepo=getSVNRepository(projectRootURL);
+        def nextVersionNumber=getNextVersionNumber(svnRepo);
+        
+        def branchName=getBranchName(svnStatus);
+        println("Branch-name: "+branchName);
+        def tagName=branchName+"-REL-"+nextVersionNumber;
+        println("Tag to create: "+tagName);
+        
+        // Create tag
+        createTag(svnClientManager, svnStatus, tagName);
     }
     
     private void printContentStatus(SVNStatus svnStatus) {
         println(svnStatus.getContentsStatus())
     }
     
-    private SVNClientManager getSVNClientManager() {
+    private SVNClientManager createSVNClientManager() {
         return SVNClientManager.newInstance();
     }
     
@@ -47,9 +61,9 @@ class SvnVersion implements Version {
     }    
     
     private String getProjectRootURL(SVNStatus svnStatus) {
-        url=svnStatus.URL.toDecodedString()
-        projRootURL=url.substring(0,decURL.lastIndexOf("/"));
-        branchName=url.substring(decURL.lastIndexOf("/")+1);
+        def url=svnStatus.URL.toDecodedString()
+        def projRootURL=url.substring(0,url.lastIndexOf("/"));
+        def branchName=url.substring(url.lastIndexOf("/")+1);
         if (projRootURL.endsWith("/branches")) {
             projRootURL=projRootURL.substring(0,projRootURL.lastIndexOf("/"));
         }
@@ -57,12 +71,12 @@ class SvnVersion implements Version {
     }
     
     private String getBranchName(SVNStatus svnStatus) {
-        decURL=svnStatus.URL.toDecodedString()
-        return decURL.substring(decURL.lastIndexOf("/")+1);
+        def url=svnStatus.URL.toDecodedString()
+        return url.substring(url.lastIndexOf("/")+1);
     }
     
     private String getTagsURL(SVNStatus svnStatus) {    
-        return getProjectRootURL(svnClientManager)+"/tags";
+        return getProjectRootURL(svnStatus)+"/tags";
     }
     
     private def SVNRepository getSVNRepository(String projectRootURL) {
@@ -72,7 +86,7 @@ class SvnVersion implements Version {
     }
     
     private def int getNextVersionNumber(SVNRepository repository) {
-        entries = repository.getDir( "tags", -1 , null , (Collection) null );
+        def entries = repository.getDir( "tags", -1 , null , (Collection) null );
         def releaseTagPattern = ~/^\S+-REL-(\d+)$/
         def max=entries.max{it2->
             def matcher=releaseTagPattern.matcher(it2.name);
@@ -84,6 +98,17 @@ class SvnVersion implements Version {
         }
         def matcher=releaseTagPattern.matcher(max.name)
         int nextVersion=matcher.matches() ? Integer.valueOf(matcher.group(1))+1 : 1;
+    }
+    
+    private def void createTag(SVNClientManager svnClientManager, SVNStatus svnStatus, String tagName) {
+        def tagsUrl=getTagsURL(svnStatus);
+        def rev = svnStatus.getRevision();
+        def url = svnStatus.URL;
+        def copyClient=svnClientManager.getCopyClient();
+        def destURL=SVNURL.parseURIDecoded(tagsUrl+"/"+tagName);
+        def copySrc=new SVNCopySource[1];
+        copySrc[0]=new SVNCopySource(rev,rev,url)
+        copyClient.doCopy(copySrc,destURL,false,false,true,"Tagging release "+tagName,null)
     }
 }
 
