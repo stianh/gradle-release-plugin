@@ -12,6 +12,7 @@ import org.tmatesoft.svn.core.wc.SVNCopySource
 import org.tmatesoft.svn.core.wc.SVNRevision
 import org.tmatesoft.svn.core.wc.SVNStatus
 import org.tmatesoft.svn.core.wc.SVNEvent
+import org.tmatesoft.svn.util.SVNDebugLog;
 
 class SvnVersion implements Version {
     private final Project project
@@ -21,6 +22,7 @@ class SvnVersion implements Version {
     }
     
 	def releasePrepare() {
+        SVNDebugLog.setDefaultLog(new NullSVNDebugLog());
         // TODO: Verify that nothing is uncommited
         // TODO: Verify that tag for this revision does not already exist
         // TODO: Calculate version-number by looking at matching tags
@@ -47,6 +49,7 @@ class SvnVersion implements Version {
 	}
     
 	def releasePerform() {
+        SVNDebugLog.setDefaultLog(new NullSVNDebugLog());
 	    // TODO: Verify that nothing is uncommited
         
         def svnClientManager=createSVNClientManager();
