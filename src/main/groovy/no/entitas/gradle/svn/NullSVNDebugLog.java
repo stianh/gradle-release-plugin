@@ -1,4 +1,4 @@
-package no.entitas.gradle;
+package no.entitas.gradle.svn;
 
 import java.io.InputStream;
 import java.io.OutputStream;

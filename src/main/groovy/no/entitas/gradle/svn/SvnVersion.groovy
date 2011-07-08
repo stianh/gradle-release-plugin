@@ -1,4 +1,6 @@
-package no.entitas.gradle
+package no.entitas.gradle.svn
+
+import no.entitas.gradle.Version;
 
 import org.gradle.api.Project;
 import org.gradle.tooling.BuildException;

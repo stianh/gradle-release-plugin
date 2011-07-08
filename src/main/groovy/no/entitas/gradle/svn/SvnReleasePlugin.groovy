@@ -1,6 +1,9 @@
-package no.entitas.gradle
+package no.entitas.gradle.svn
 
 import groovy.lang.Closure;
+
+import no.entitas.gradle.ReleasePlugin;
+import no.entitas.gradle.Version;
 
 import org.gradle.api.Project;
 

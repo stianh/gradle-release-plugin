@@ -1,4 +1,4 @@
-package no.entitas.gradle
+package no.entitas.gradle.svn
 
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNException

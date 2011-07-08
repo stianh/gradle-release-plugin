@@ -1,4 +1,7 @@
-package no.entitas.gradle
+package no.entitas.gradle.git
+
+import no.entitas.gradle.Version;
+import no.entitas.gradle.VersionNumber;
 
 import org.gradle.api.GradleException
 import org.gradle.api.Project

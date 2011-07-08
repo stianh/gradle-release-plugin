@@ -1,5 +1,8 @@
-package no.entitas.gradle
-import no.entitas.gradle.GitVersion
+package no.entitas.gradle.git
+import no.entitas.gradle.ReleasePlugin;
+import no.entitas.gradle.Version;
+import no.entitas.gradle.git.GitVersion;
+
 import org.gradle.api.Project
 import org.gradle.api.Plugin
 import org.gradle.api.Task;
