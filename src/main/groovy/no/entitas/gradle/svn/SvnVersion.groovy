@@ -152,15 +152,15 @@ class SvnVersion implements Version {
             return "rootURL="+rootURL+", "+"branchName="+branchName+", isBranch="+isBranch+", tagsURL="+tagsURL+", headRev="+headRev;
         }
     }
-    
-    
-    static public void main(String...args) {
-        SVNRepositoryFactoryImpl.setup();
-        FSRepositoryFactory.setup();
-        def svnClientManager=SVNClientManager.newInstance();
-        def svnStatus=svnClientManager.getStatusClient().doStatus(new File(args[0]),true)
-        println(svnStatus)
-        println(new SvnVersion(null).getHeadRevision(svnStatus.URL, svnClientManager))
-    }
+//    
+//    
+//    static public void main(String...args) {
+//        SVNRepositoryFactoryImpl.setup();
+//        FSRepositoryFactory.setup();
+//        def svnClientManager=SVNClientManager.newInstance();
+//        def svnStatus=svnClientManager.getStatusClient().doStatus(new File(args[0]),true)
+//        println(svnStatus)
+//        println(new SvnVersion(null).getHeadRevision(svnStatus.URL, svnClientManager))
+//    }
 }
 
