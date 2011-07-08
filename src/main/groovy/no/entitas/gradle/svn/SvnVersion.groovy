@@ -51,11 +51,7 @@ class SvnVersion implements Version {
             if (graph.hasTask(':releasePrepare')) {
                 checkUpToDateAndNoLocalModifications(svnClientManager,repoInfo)
                 this.versionNumber = tagName
-            }
-//            else if (isOnReleaseTag() && !hasLocalModifications()) {
-//                this.versionNumber = getCurrentVersion()
-//            }
-            else {
+            } else {
                 this.versionNumber = repoInfo.branchName + '-SNAPSHOT'
             }
         }
@@ -167,23 +163,6 @@ class SvnVersion implements Version {
         def String toString() {
             return "rootURL="+rootURL+", "+"branchName="+branchName+", isBranch="+isBranch+", tagsURL="+tagsURL+", headRev="+headRev;
         }
-    }
-    
-    static public void main(String...args) {
-        SVNRepositoryFactoryImpl.setup();
-        FSRepositoryFactory.setup();
-        SVNDebugLog.setDefaultLog(new NullSVNDebugLog());
-//        def authMan=SVNWCUtil.createDefaultAuthenticationManager(SVNWCUtil.getDefaultConfigurationDirectory());
-        def authMan=SVNWCUtil.createDefaultAuthenticationManager();
-        def opt=SVNWCUtil.createDefaultOptions(false);
-        def svnClientManager=SVNClientManager.newInstance(opt,authMan);
-//        def svnStatus=svnClientManager.getStatusClient().doStatus(new File("/home/mk/sandbox/workspace.qepta.trunk/qepta"),false)
-        def svnStatus=svnClientManager.getStatusClient().doStatus(new File("/home/mk/testing/testproj"),false)
-        def wcClient=svnClientManager.getWCClient();
-        System.out.println("URL: "+svnStatus.URL);
-//        SVNInfo info = wcClient.doInfo(svnStatus.URL, SVNRevision.HEAD, SVNRevision.HEAD);
-        SVNInfo info = wcClient.doInfo(new File("/home/mk/testing/testproj"), SVNRevision.HEAD);
-        println(info)
     }
 }
 
