@@ -24,39 +24,54 @@ import org.tmatesoft.svn.core.internal.util.SVNPathUtil
 class SvnVersion implements Version {
     private final def releaseTagPattern = ~/^(\S+)-REL-(\d+)$/
     private final Project project
+    private final SVNStatus svnStatus;
+    private final RepoInfo repoInfo
+    private final String tagName
+    private String versionNumber;
     
     SvnVersion(Project project) {
         this.project=project;
-    }
-    
-	def releasePrepare() {
         SVNRepositoryFactoryImpl.setup();
-        FSRepositoryFactory.setup();        
-        SVNDebugLog.setDefaultLog(new NullSVNDebugLog())
-        def svnClientManager=SVNClientManager.newInstance();
-        def svnStatus=svnClientManager.getStatusClient().doStatus(project.rootDir,true)
-        def repoInfo=getRepoInfo(svnClientManager,svnStatus)
-        println("RepoInfo: "+repoInfo)
-        checkUpToDateAndNoLocalModifications(svnClientManager,repoInfo)
-        svnClientManager.dispose()
-	}
-    
-	def releasePerform() {
-	    SVNRepositoryFactoryImpl.setup();
-	    FSRepositoryFactory.setup();        
+        FSRepositoryFactory.setup();
         SVNDebugLog.setDefaultLog(new NullSVNDebugLog());
         def svnClientManager=SVNClientManager.newInstance();
-        def svnStatus=svnClientManager.getStatusClient().doStatus(project.rootDir,true)
-        def repoInfo=getRepoInfo(svnClientManager,svnStatus)
+        this.svnStatus=svnClientManager.getStatusClient().doStatus(project.rootDir,true)
+        this.repoInfo=getRepoInfo(svnClientManager,svnStatus)
         println("RepoInfo: "+repoInfo)
-        checkUpToDateAndNoLocalModifications(svnClientManager,repoInfo)
         
         def svnRepo=SVNRepositoryFactory.create(repoInfo.rootURL)
         
-        def latestTag=getLatestTag(svnRepo, repoInfo.branchName)        
+        def latestTag=getLatestTag(svnRepo, repoInfo.branchName)
         def nextVersionNumber=getNextVersionNumber(latestTag)
-        def tagName=repoInfo.branchName+"-REL-"+nextVersionNumber;
+        this.tagName=repoInfo.branchName+"-REL-"+nextVersionNumber;
+        svnClientManager.dispose()
         
+        project.gradle.taskGraph.whenReady {graph ->
+            if (graph.hasTask(':releasePrepare')) {
+                checkUpToDateAndNoLocalModifications(svnClientManager,repoInfo)
+                this.versionNumber = tagName
+            }
+//            else if (isOnReleaseTag() && !hasLocalModifications()) {
+//                this.versionNumber = getCurrentVersion()
+//            }
+            else {
+                this.versionNumber = repoInfo.branchName + '-SNAPSHOT'
+            }
+        }
+
+    }
+    
+    def String toString() {
+        return versionNumber;
+    }
+    
+	def releasePrepare() {
+        
+	}
+    
+	def releasePerform() {
+        def svnClientManager=SVNClientManager.newInstance();
+        checkUpToDateAndNoLocalModifications(svnClientManager,repoInfo)
         createTag(svnClientManager, svnStatus, repoInfo, tagName);
         svnClientManager.dispose()
     }
