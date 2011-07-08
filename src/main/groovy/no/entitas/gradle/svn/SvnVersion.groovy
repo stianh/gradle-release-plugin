@@ -14,6 +14,7 @@ import org.tmatesoft.svn.core.internal.wc.admin.ISVNEntryHandler;
 import org.tmatesoft.svn.core.SVNDirEntry;
 import org.tmatesoft.svn.core.SVNURL
 import org.tmatesoft.svn.core.wc.SVNCopySource
+import org.tmatesoft.svn.core.wc.SVNInfo;
 import org.tmatesoft.svn.core.wc.SVNRevision
 import org.tmatesoft.svn.core.wc.SVNStatus
 import org.tmatesoft.svn.core.wc.SVNEvent
@@ -29,25 +30,27 @@ class SvnVersion implements Version {
     }
     
 	def releasePrepare() {
+        SVNRepositoryFactoryImpl.setup();
+        FSRepositoryFactory.setup();        
         SVNDebugLog.setDefaultLog(new NullSVNDebugLog())
         def svnClientManager=SVNClientManager.newInstance();
-        checkUpToDateAndNoLocalModifications(svnClientManager)
-        def svnStatus=svnClientManager.getStatusClient().doStatus(project.rootDir,false)
-        def repoInfo=getRepoInfo(svnStatus)
+        def svnStatus=svnClientManager.getStatusClient().doStatus(project.rootDir,true)
+        def repoInfo=getRepoInfo(svnClientManager,svnStatus)
         println("RepoInfo: "+repoInfo)
+        checkUpToDateAndNoLocalModifications(svnClientManager,repoInfo)
         svnClientManager.dispose()
 	}
     
 	def releasePerform() {
+	    SVNRepositoryFactoryImpl.setup();
+	    FSRepositoryFactory.setup();        
         SVNDebugLog.setDefaultLog(new NullSVNDebugLog());
         def svnClientManager=SVNClientManager.newInstance();
-        checkUpToDateAndNoLocalModifications(svnClientManager)
-        def svnStatus=svnClientManager.getStatusClient().doStatus(project.rootDir,false)
-        def repoInfo=getRepoInfo(svnStatus)
+        def svnStatus=svnClientManager.getStatusClient().doStatus(project.rootDir,true)
+        def repoInfo=getRepoInfo(svnClientManager,svnStatus)
         println("RepoInfo: "+repoInfo)
+        checkUpToDateAndNoLocalModifications(svnClientManager,repoInfo)
         
-        SVNRepositoryFactoryImpl.setup();
-        FSRepositoryFactory.setup();        
         def svnRepo=SVNRepositoryFactory.create(repoInfo.rootURL)
         
         def latestTag=getLatestTag(svnRepo, repoInfo.branchName)        
@@ -58,34 +61,41 @@ class SvnVersion implements Version {
         svnClientManager.dispose()
     }
     
-    private void checkUpToDateAndNoLocalModifications(SVNClientManager svnClientManager) {
-        def containsLocalModifications=new LocalChangesChecker().containsLocalModifications(svnClientManager, project.rootDir)
+    private void checkUpToDateAndNoLocalModifications(SVNClientManager svnClientManager, RepoInfo repoInfo) {
+        def containsLocalModifications=new LocalChangesChecker().containsLocalModifications(svnClientManager, project.rootDir, repoInfo.headRev)
         
         if (containsLocalModifications) {
             throw new RuntimeException("Workspace contains local modifications.");
         }
         
-        def containsRemoteModifications=new UpToDateChecker().containsRemoteModifications(svnClientManager, project.rootDir)
+        def containsRemoteModifications=new UpToDateChecker().containsRemoteModifications(svnClientManager, project.rootDir, repoInfo.headRev)
         if (containsRemoteModifications) {
             throw new RuntimeException("Workspace is not up-to-date.")
         }
     }
     
-    private RepoInfo getRepoInfo(SVNStatus svnStatus) {
+    private RepoInfo getRepoInfo(SVNClientManager svnClientManager, SVNStatus svnStatus) {
         def url=svnStatus.URL;
+        def headRevision=getHeadRevision(url,svnClientManager);
         def pathTail=SVNPathUtil.tail(url.getPath())
         if ("trunk".equals(pathTail)) {
             def rootURL=url.removePathTail();
             def tagsURL=rootURL.appendPath("tags",false)
-            return new RepoInfo(rootURL,"trunk",false,tagsURL,svnStatus.getCommittedRevision());
+            return new RepoInfo(rootURL,"trunk",false,tagsURL,headRevision);
         } else if ("branches".equals(SVNPathUtil.tail(url.removePathTail()))) {
             def branchName=SVNPathUtil.tail(url.getPath())
             def rootURL=url.removePathTail().removePathTail();
             def tagsURL=rootURL.appendPath("tags",false)
-            return new RepoInfo(rootURL,branchName,true,tagsURL,svnStatus.getCommittedRevision());
+            return new RepoInfo(rootURL,branchName,true,tagsURL,headRevision);
         } else {
             throw new RuntimeException("Illegal url: "+url.getPath()+". Must end with /trunk or /branches/<branchname>.")
         }
+    }
+    
+    private SVNRevision getHeadRevision(SVNURL url,SVNClientManager svnClientManager) {
+        def wcClient=svnClientManager.getWCClient();
+        SVNInfo info = wcClient.doInfo(url, SVNRevision.HEAD, SVNRevision.HEAD);
+        return info.getRevision();
     }
     
     private def SVNDirEntry getLatestTag(SVNRepository svnRepository, String branchName) {
@@ -110,7 +120,7 @@ class SvnVersion implements Version {
     
     private def void createTag(SVNClientManager svnClientManager, SVNStatus svnStatus, RepoInfo repoInfo, String tagName) {
         def tagsUrl=repoInfo.tagsURL
-        def rev = repoInfo.committedRevision
+        def rev = repoInfo.headRev
         def url = svnStatus.URL;
         def destURL=tagsUrl.appendPath(tagName,false);
         def copySrc=new SVNCopySource[1];
@@ -128,19 +138,29 @@ class SvnVersion implements Version {
         private final String branchName;
         private final boolean isBranch;
         private final SVNURL tagsURL;
-        private final SVNRevision committedRevision;
+        private final SVNRevision headRev;
         
-        RepoInfo(SVNURL rootURL, String branchName, boolean isBranch, SVNURL tagsURL, SVNRevision committedRevision) {
+        RepoInfo(SVNURL rootURL, String branchName, boolean isBranch, SVNURL tagsURL, SVNRevision headRev) {
             this.rootURL=rootURL
             this.branchName=branchName
             this.isBranch=isBranch
             this.tagsURL=tagsURL
-            this.committedRevision=committedRevision
+            this.headRev=headRev
         }
         
         def String toString() {
-            return "rootURL="+rootURL+", "+"branchName="+branchName+", isBranch="+isBranch+", tagsURL="+tagsURL+", committedRevision="+committedRevision;
+            return "rootURL="+rootURL+", "+"branchName="+branchName+", isBranch="+isBranch+", tagsURL="+tagsURL+", headRev="+headRev;
         }
+    }
+    
+    
+    static public void main(String...args) {
+        SVNRepositoryFactoryImpl.setup();
+        FSRepositoryFactory.setup();
+        def svnClientManager=SVNClientManager.newInstance();
+        def svnStatus=svnClientManager.getStatusClient().doStatus(new File(args[0]),true)
+        println(svnStatus)
+        println(new SvnVersion(null).getHeadRevision(svnStatus.URL, svnClientManager))
     }
 }
 

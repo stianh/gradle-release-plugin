@@ -15,11 +15,11 @@ import org.tmatesoft.svn.core.wc.SVNClientManager
 class UpToDateChecker implements ISVNStatusHandler {    
     private boolean remoteModifications=false;
         
-    public boolean containsRemoteModifications(SVNClientManager svnClientManager, File path) {
+    public boolean containsRemoteModifications(SVNClientManager svnClientManager, File path, SVNRevision headRev) {
         SVNRepositoryFactoryImpl.setup();
         FSRepositoryFactory.setup();
         def statusClient=svnClientManager.getStatusClient()
-        statusClient.doStatus(path, SVNRevision.HEAD, SVNDepth.INFINITY, true, true, true, false, this,null)
+        statusClient.doStatus(path, headRev, SVNDepth.INFINITY, true, true, true, false, this,null)
         return remoteModifications
     }
     

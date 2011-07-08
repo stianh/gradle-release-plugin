@@ -13,11 +13,11 @@ import org.tmatesoft.svn.core.wc.SVNClientManager
 class LocalChangesChecker implements ISVNStatusHandler {
     private boolean localModifications=false
     
-    public boolean containsLocalModifications(SVNClientManager svnClientManager, File path) {
+    public boolean containsLocalModifications(SVNClientManager svnClientManager, File path,SVNRevision headRev) {
         SVNRepositoryFactoryImpl.setup();
         FSRepositoryFactory.setup();
         def statusClient=svnClientManager.getStatusClient()
-        statusClient.doStatus(path, SVNRevision.HEAD, SVNDepth.INFINITY, true, true, true, false, this,null)
+        statusClient.doStatus(path, headRev, SVNDepth.INFINITY, true, true, true, false, this,null)
         return localModifications
     }
     
