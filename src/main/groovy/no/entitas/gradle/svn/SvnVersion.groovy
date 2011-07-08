@@ -11,6 +11,7 @@ import org.tmatesoft.svn.core.internal.io.svn.SVNRepositoryFactoryImpl
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory
 import org.tmatesoft.svn.core.internal.util.SVNURLUtil;
 import org.tmatesoft.svn.core.internal.wc.admin.ISVNEntryHandler;
+import org.tmatesoft.svn.core.SVNDirEntry;
 import org.tmatesoft.svn.core.SVNURL
 import org.tmatesoft.svn.core.wc.SVNCopySource
 import org.tmatesoft.svn.core.wc.SVNRevision
@@ -20,6 +21,7 @@ import org.tmatesoft.svn.util.SVNDebugLog
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil
 
 class SvnVersion implements Version {
+    private final def releaseTagPattern = ~/^(\S+)-REL-(\d+)$/
     private final Project project
     
     SvnVersion(Project project) {
@@ -46,9 +48,10 @@ class SvnVersion implements Version {
         
         SVNRepositoryFactoryImpl.setup();
         FSRepositoryFactory.setup();        
-        def svnRepo=SVNRepositoryFactory.create(repoInfo.rootURL);
+        def svnRepo=SVNRepositoryFactory.create(repoInfo.rootURL)
         
-        def nextVersionNumber=getNextVersionNumber(svnRepo, repoInfo.branchName)
+        def latestTag=getLatestTag(svnRepo, repoInfo.branchName)        
+        def nextVersionNumber=getNextVersionNumber(latestTag)
         def tagName=repoInfo.branchName+"-REL-"+nextVersionNumber;
         
         createTag(svnClientManager, svnStatus, repoInfo, tagName);
@@ -85,10 +88,9 @@ class SvnVersion implements Version {
         }
     }
     
-    private def int getNextVersionNumber(SVNRepository repository, String branchName) {
-        def entries = repository.getDir( "tags", -1 , null , (Collection) null );
-        def releaseTagPattern = ~/^(\S+)-REL-(\d+)$/
-        def max=entries.max{it2->
+    private def SVNDirEntry getLatestTag(SVNRepository svnRepository, String branchName) {
+        def entries = svnRepository.getDir( "tags", -1 , null , (Collection) null );
+        SVNDirEntry max=entries.max{it2->
             def matcher=releaseTagPattern.matcher(it2.name);
             if (matcher.matches() && branchName.equals(matcher.group(1))) {
               Integer.valueOf(matcher.group(2))
@@ -96,10 +98,13 @@ class SvnVersion implements Version {
               null
             }
         }
-        if (max==null) {
+    }
+    
+    private def int getNextVersionNumber(SVNDirEntry latestTag) {
+        if (latestTag==null) {
             return 1;
-        }
-        def matcher=releaseTagPattern.matcher(max.name)
+        }        
+        def matcher=releaseTagPattern.matcher(latestTag.name)
         return matcher.matches() ? Integer.valueOf(matcher.group(2))+1 : 1;
     }
     
@@ -115,7 +120,7 @@ class SvnVersion implements Version {
         def dirsToMake=new SVNURL[1];
         dirsToMake[0]=destURL;
         def copyClient=svnClientManager.getCopyClient()        
-        copyClient.doCopy(copySrc,destURL,false,false,true,"Tagging release "+tagName,null)
+        copyClient.doCopy(copySrc,destURL,false,false,true,"Tagging release "+tagName+", (from "+url+", rev "+rev,null)
     }
     
     private class RepoInfo {
