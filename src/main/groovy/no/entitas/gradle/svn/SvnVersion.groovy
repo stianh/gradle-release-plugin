@@ -20,6 +20,7 @@ import org.tmatesoft.svn.core.wc.SVNStatus
 import org.tmatesoft.svn.core.wc.SVNEvent
 import org.tmatesoft.svn.util.SVNDebugLog
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil
+import org.tmatesoft.svn.core.wc.SVNWCUtil
 
 class SvnVersion implements Version {
     private final def releaseTagPattern = ~/^(\S+)-REL-(\d+)$/
@@ -35,7 +36,7 @@ class SvnVersion implements Version {
         FSRepositoryFactory.setup();
         SVNDebugLog.setDefaultLog(new NullSVNDebugLog());
         def svnClientManager=SVNClientManager.newInstance();
-        this.svnStatus=svnClientManager.getStatusClient().doStatus(project.rootDir,true)
+        this.svnStatus=svnClientManager.getStatusClient().doStatus(project.rootDir,false)
         this.repoInfo=getRepoInfo(svnClientManager,svnStatus)
         println("RepoInfo: "+repoInfo)
         
@@ -167,15 +168,22 @@ class SvnVersion implements Version {
             return "rootURL="+rootURL+", "+"branchName="+branchName+", isBranch="+isBranch+", tagsURL="+tagsURL+", headRev="+headRev;
         }
     }
-//    
-//    
-//    static public void main(String...args) {
-//        SVNRepositoryFactoryImpl.setup();
-//        FSRepositoryFactory.setup();
-//        def svnClientManager=SVNClientManager.newInstance();
-//        def svnStatus=svnClientManager.getStatusClient().doStatus(new File(args[0]),true)
-//        println(svnStatus)
-//        println(new SvnVersion(null).getHeadRevision(svnStatus.URL, svnClientManager))
-//    }
+    
+    static public void main(String...args) {
+        SVNRepositoryFactoryImpl.setup();
+        FSRepositoryFactory.setup();
+        SVNDebugLog.setDefaultLog(new NullSVNDebugLog());
+//        def authMan=SVNWCUtil.createDefaultAuthenticationManager(SVNWCUtil.getDefaultConfigurationDirectory());
+        def authMan=SVNWCUtil.createDefaultAuthenticationManager();
+        def opt=SVNWCUtil.createDefaultOptions(false);
+        def svnClientManager=SVNClientManager.newInstance(opt,authMan);
+//        def svnStatus=svnClientManager.getStatusClient().doStatus(new File("/home/mk/sandbox/workspace.qepta.trunk/qepta"),false)
+        def svnStatus=svnClientManager.getStatusClient().doStatus(new File("/home/mk/testing/testproj"),false)
+        def wcClient=svnClientManager.getWCClient();
+        System.out.println("URL: "+svnStatus.URL);
+//        SVNInfo info = wcClient.doInfo(svnStatus.URL, SVNRevision.HEAD, SVNRevision.HEAD);
+        SVNInfo info = wcClient.doInfo(new File("/home/mk/testing/testproj"), SVNRevision.HEAD);
+        println(info)
+    }
 }
 
