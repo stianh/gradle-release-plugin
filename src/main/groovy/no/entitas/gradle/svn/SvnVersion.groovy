@@ -59,12 +59,12 @@ class SvnVersion implements Version {
         def containsLocalModifications=new LocalChangesChecker().containsLocalModifications(svnClientManager, project.rootDir)
         
         if (containsLocalModifications) {
-            throw new BuildException("Workspace contains local modifications");
+            throw new RuntimeException("Workspace contains local modifications.");
         }
         
         def containsRemoteModifications=new UpToDateChecker().containsRemoteModifications(svnClientManager, project.rootDir)
         if (containsRemoteModifications) {
-            throw new BuildException("Workspace is not up-to-date")
+            throw new RuntimeException("Workspace is not up-to-date.")
         }
     }
     
