@@ -1,6 +1,7 @@
 package no.entitas.gradle
 
 import org.gradle.api.Project;
+import org.gradle.tooling.BuildException;
 import org.tmatesoft.svn.core.wc.SVNClientManager
 import org.tmatesoft.svn.core.io.SVNRepositoryFactory
 import org.tmatesoft.svn.core.io.SVNRepository
@@ -26,6 +27,7 @@ class SvnVersion implements Version {
 	def releasePrepare() {
         SVNDebugLog.setDefaultLog(new NullSVNDebugLog())
         def svnClientManager=SVNClientManager.newInstance();
+        checkUpToDateAndNoLocalModifications(svnClientManager)
         def svnStatus=svnClientManager.getStatusClient().doStatus(project.rootDir,false)
         def repoInfo=getRepoInfo(svnStatus)
         println("RepoInfo: "+repoInfo)
@@ -35,6 +37,7 @@ class SvnVersion implements Version {
 	def releasePerform() {
         SVNDebugLog.setDefaultLog(new NullSVNDebugLog());
         def svnClientManager=SVNClientManager.newInstance();
+        checkUpToDateAndNoLocalModifications(svnClientManager)
         def svnStatus=svnClientManager.getStatusClient().doStatus(project.rootDir,false)
         def repoInfo=getRepoInfo(svnStatus)
         println("RepoInfo: "+repoInfo)
@@ -48,6 +51,19 @@ class SvnVersion implements Version {
         
         createTag(svnClientManager, svnStatus, repoInfo, tagName);
         svnClientManager.dispose()
+    }
+    
+    private void checkUpToDateAndNoLocalModifications(SVNClientManager svnClientManager) {
+        def containsLocalModifications=new LocalChangesChecker().containsLocalModifications(svnClientManager, project.rootDir)
+        
+        if (containsLocalModifications) {
+            throw new BuildException("Workspace contains local modifications");
+        }
+        
+        def isUpToDate=new UpToDateChecker().isUpToDate(svnClientManager, project.rootDir)
+        if (!isUpToDate) {
+            throw new BuildException("Workspace is not up-to-date")
+        }
     }
     
     private RepoInfo getRepoInfo(SVNStatus svnStatus) {
