@@ -30,7 +30,6 @@ class SvnVersion implements Version {
     private String versionNumber;
     
     SvnVersion(Project project) {
-        println("Heisann")
         this.project=project;
         SVNRepositoryFactoryImpl.setup();
         FSRepositoryFactory.setup();
@@ -39,7 +38,7 @@ class SvnVersion implements Version {
         def svnClientManager=SVNClientManager.newInstance();
         this.svnStatus=svnClientManager.getStatusClient().doStatus(project.rootDir,false)
         this.repoInfo=getRepoInfo(svnClientManager,svnStatus)
-        println("RepoInfo: "+repoInfo)
+        //println("RepoInfo: "+repoInfo)
         
         def svnRepo=SVNRepositoryFactory.create(repoInfo.rootURL)
         
@@ -63,7 +62,8 @@ class SvnVersion implements Version {
     }
     
 	def releasePrepare() {
-        
+        println("RepoInfo: "+repoInfo)
+        println("Tag to create: "+tagName)
 	}
     
 	def releasePerform() {
