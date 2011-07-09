@@ -1,26 +1,25 @@
 package no.entitas.gradle.svn
 
-import no.entitas.gradle.Version;
+import no.entitas.gradle.Version
 
-import org.gradle.api.Project;
-import org.gradle.tooling.BuildException;
-import org.tmatesoft.svn.core.wc.SVNClientManager
-import org.tmatesoft.svn.core.io.SVNRepositoryFactory
-import org.tmatesoft.svn.core.io.SVNRepository
-import org.tmatesoft.svn.core.internal.io.svn.SVNRepositoryFactoryImpl
-import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory
-import org.tmatesoft.svn.core.internal.util.SVNURLUtil;
-import org.tmatesoft.svn.core.internal.wc.admin.ISVNEntryHandler;
-import org.tmatesoft.svn.core.SVNDirEntry;
+import org.gradle.api.Project
+import org.tmatesoft.svn.core.SVNDepth
+import org.tmatesoft.svn.core.SVNDirEntry
 import org.tmatesoft.svn.core.SVNURL
+import org.tmatesoft.svn.core.internal.io.dav.DAVRepositoryFactory;
+import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory
+import org.tmatesoft.svn.core.internal.io.svn.SVNRepositoryFactoryImpl
+import org.tmatesoft.svn.core.internal.util.SVNHashSet
+import org.tmatesoft.svn.core.internal.util.SVNPathUtil
+import org.tmatesoft.svn.core.io.SVNRepository
+import org.tmatesoft.svn.core.io.SVNRepositoryFactory
+import org.tmatesoft.svn.core.wc.ISVNStatusHandler
+import org.tmatesoft.svn.core.wc.SVNClientManager
 import org.tmatesoft.svn.core.wc.SVNCopySource
-import org.tmatesoft.svn.core.wc.SVNInfo;
+import org.tmatesoft.svn.core.wc.SVNInfo
 import org.tmatesoft.svn.core.wc.SVNRevision
 import org.tmatesoft.svn.core.wc.SVNStatus
-import org.tmatesoft.svn.core.wc.SVNEvent
 import org.tmatesoft.svn.util.SVNDebugLog
-import org.tmatesoft.svn.core.internal.util.SVNPathUtil
-import org.tmatesoft.svn.core.wc.SVNWCUtil
 
 class SvnVersion implements Version {
     private final def releaseTagPattern = ~/^(\S+)-REL-(\d+)$/
@@ -31,9 +30,11 @@ class SvnVersion implements Version {
     private String versionNumber;
     
     SvnVersion(Project project) {
+        println("Heisann")
         this.project=project;
         SVNRepositoryFactoryImpl.setup();
         FSRepositoryFactory.setup();
+        DAVRepositoryFactory.setup();
         SVNDebugLog.setDefaultLog(new NullSVNDebugLog());
         def svnClientManager=SVNClientManager.newInstance();
         this.svnStatus=svnClientManager.getStatusClient().doStatus(project.rootDir,false)
@@ -55,7 +56,6 @@ class SvnVersion implements Version {
                 this.versionNumber = repoInfo.branchName + '-SNAPSHOT'
             }
         }
-
     }
     
     def String toString() {
@@ -165,4 +165,3 @@ class SvnVersion implements Version {
         }
     }
 }
-
