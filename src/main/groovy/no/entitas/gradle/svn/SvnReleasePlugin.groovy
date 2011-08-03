@@ -20,7 +20,7 @@ class SvnReleasePlugin extends ReleasePlugin {
 		String snapshotDistributionUrl
 		String releaseDistributionUrl
 
-		def gitRelease(Closure closure) {
+		def svnRelease(Closure closure) {
 			closure.delegate = this
 			closure()
 		}

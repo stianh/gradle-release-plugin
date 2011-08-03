@@ -21,12 +21,15 @@ import org.tmatesoft.svn.core.wc.SVNRevision
 import org.tmatesoft.svn.core.wc.SVNStatus
 import org.tmatesoft.svn.util.SVNDebugLog
 
+import org.gradle.api.GradleException
+
 class SvnVersion implements Version {
     private final def releaseTagPattern = ~/^(\S+)-REL-(\d+)$/
     private final Project project
     private final SVNStatus svnStatus;
     private final RepoInfo repoInfo
     private final String tagName
+    private Boolean release;
     private String versionNumber;
     
     SvnVersion(Project project) {
@@ -50,8 +53,10 @@ class SvnVersion implements Version {
         project.gradle.taskGraph.whenReady {graph ->
             if (graph.hasTask(':releasePrepare')) {
                 checkUpToDateAndNoLocalModifications(svnClientManager,repoInfo)
+                this.release=true;
                 this.versionNumber = tagName
             } else {
+                this.release=false;
                 this.versionNumber = repoInfo.branchName + '-SNAPSHOT'
             }
         }
@@ -143,6 +148,13 @@ class SvnVersion implements Version {
         dirsToMake[0]=destURL;
         def copyClient=svnClientManager.getCopyClient()        
         copyClient.doCopy(copySrc,destURL,false,false,true,"Tagging release "+tagName+", (from "+url+", rev "+rev,null)
+    }
+    
+    public boolean isRelease() {
+        if (release == null) {
+            throw new GradleException("Can't determine whether this is a release build before the task graph is populated")
+        }
+        return release
     }
     
     private class RepoInfo {
