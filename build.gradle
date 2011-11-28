@@ -3,7 +3,7 @@ apply plugin: 'eclipse'
 apply plugin: 'groovy'
 apply plugin: 'maven'
 
-version = '1.4'
+version = '1.5'
 group = 'no.entitas'
 repositories{
   mavenCentral()
