@@ -1,5 +1,3 @@
-apply plugin: 'idea'
-apply plugin: 'eclipse'
 apply plugin: 'groovy'
 apply plugin: 'maven'
 
