@@ -1,21 +1,115 @@
+import org.gradle.api.artifacts.maven.MavenDeployment
+
 apply plugin: 'groovy'
 apply plugin: 'maven'
+apply plugin: 'signing'
 
 version = '1.5'
 group = 'no.entitas.gradle'
-repositories{
-  mavenCentral()
+
+repositories {
+    mavenCentral()
 }
 
-dependencies{
-  groovy "org.codehaus.groovy:groovy-all:1.8.4"
-  compile gradleApi()
-  compile 'org.tmatesoft.svnkit:svnkit:1.3.5'
+dependencies {
+    compile gradleApi()
+    compile 'org.tmatesoft.svnkit:svnkit:1.3.5'
+    groovy "org.codehaus.groovy:groovy-all:1.8.0"
 }
 
-def localMavenRepo = 'file://' + new File(System.getProperty('user.home'), '.m2/repository').absolutePath
-uploadArchives {
-    repositories.mavenDeployer {
-        repository(url: localMavenRepo)
+task sourcesJar(type: Jar, dependsOn: classes) {
+     classifier = 'sources'
+     from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+     classifier = 'javadoc'
+     from javadoc.destinationDir
+}
+
+artifacts {
+     archives sourcesJar
+     archives javadocJar
+}
+
+signing {
+    sign configurations.archives
+}
+
+defaultProject = {
+    name 'Gradle Release plugin'
+    // packaging 'jar' (Packaging is set later through direct modification of the xml)
+    description 'The Gradle Release plugin makes releasing Gradle projects easy.'
+    url 'http://github.com/stianh/gradle-release-plugin'
+    inceptionYear '2011'
+
+    scm {
+        developerConnection 'git@github.com:stianh/gradle-release-plugin.git'
+        connection 'git://github.com/stianh/gradle-release-plugin.git'
+        url 'https://github.com/stianh/gradle-release-plugin'
+    }
+
+    licenses {
+        license {
+            name 'The Apache Software License, Version 2.0'
+            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+            distribution 'repo'
+        }
+    }
+
+    developers {
+        developer {
+            id 'stianh'
+            name 'Stian Hegglund'
+            email 'stian.hegglund@gmail.com'
+            roles {
+                role 'Developer'
+            }
+            timezone '+1'
+        }
+        developer {
+            id 'stigkj'
+            name 'Stig Kleppe-J¿rgensen'
+            email 'from.gradle-release@nisgits.net'
+            roles {
+                role 'Developer'
+            }
+            timezone '+1'
+        }
+    }
+}
+
+fixedProject = {
+    project defaultProject
+    withXml {
+        def project = it.asNode()
+        project.version[0] + {
+            packaging 'jar'
+        }
+    }
+}
+
+install.repositories.mavenInstaller {
+    pom fixedProject
+
+    beforeDeployment {
+        MavenDeployment deployment -> signPom(deployment)
+    }
+}
+
+uploadArchives.repositories.mavenDeployer {
+    pom fixedProject
+    uniqueVersion = false
+
+    beforeDeployment {
+        MavenDeployment deployment -> signPom(deployment)
+    }
+
+    snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+        authentication(userName: sonatypeUsername, password: sonatypePassword)
+    }
+
+    repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+        authentication(userName: sonatypeUsername, password: sonatypePassword)
     }
 }
