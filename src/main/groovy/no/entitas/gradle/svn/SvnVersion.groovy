@@ -1,27 +1,22 @@
 package no.entitas.gradle.svn
 
 import no.entitas.gradle.Version
-
+import org.gradle.api.GradleException
 import org.gradle.api.Project
-import org.tmatesoft.svn.core.SVNDepth
 import org.tmatesoft.svn.core.SVNDirEntry
 import org.tmatesoft.svn.core.SVNURL
-import org.tmatesoft.svn.core.internal.io.dav.DAVRepositoryFactory;
+import org.tmatesoft.svn.core.internal.io.dav.DAVRepositoryFactory
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory
 import org.tmatesoft.svn.core.internal.io.svn.SVNRepositoryFactoryImpl
-import org.tmatesoft.svn.core.internal.util.SVNHashSet
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil
 import org.tmatesoft.svn.core.io.SVNRepository
 import org.tmatesoft.svn.core.io.SVNRepositoryFactory
-import org.tmatesoft.svn.core.wc.ISVNStatusHandler
 import org.tmatesoft.svn.core.wc.SVNClientManager
 import org.tmatesoft.svn.core.wc.SVNCopySource
 import org.tmatesoft.svn.core.wc.SVNInfo
 import org.tmatesoft.svn.core.wc.SVNRevision
 import org.tmatesoft.svn.core.wc.SVNStatus
 import org.tmatesoft.svn.util.SVNDebugLog
-
-import org.gradle.api.GradleException
 
 class SvnVersion implements Version {
     private final def releaseTagPattern = ~/^(\S+)-REL-(\d+)$/
@@ -99,7 +94,7 @@ class SvnVersion implements Version {
             def rootURL=url.removePathTail();
             def tagsURL=rootURL.appendPath("tags",false)
             return new RepoInfo(rootURL,"trunk",false,tagsURL,headRevision);
-        } else if ("branches".equals(SVNPathUtil.tail(url.removePathTail()))) {
+        } else if ("branches".equals(SVNPathUtil.tail(url.removePathTail().getPath()))) {
             def branchName=SVNPathUtil.tail(url.getPath())
             def rootURL=url.removePathTail().removePathTail();
             def tagsURL=rootURL.appendPath("tags",false)
