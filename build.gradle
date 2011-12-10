@@ -69,7 +69,7 @@ defaultProject = {
         }
         developer {
             id 'stigkj'
-            name 'Stig Kleppe-J¿rgensen'
+            name 'Stig Kleppe-JÃ¸rgensen'
             email 'from.gradle-release@nisgits.net'
             roles {
                 role 'Developer'
