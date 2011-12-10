@@ -68,6 +68,15 @@ defaultProject = {
             timezone '+1'
         }
         developer {
+            id 'mariusk'
+            name 'Marius Krabset'
+            email 'marius.krabset@gmail.com'
+            roles {
+                role 'Developer'
+            }
+            timezone '+1'
+        }
+        developer {
             id 'stigkj'
             name 'Stig Kleppe-Jørgensen'
             email 'from.gradle-release@nisgits.net'
