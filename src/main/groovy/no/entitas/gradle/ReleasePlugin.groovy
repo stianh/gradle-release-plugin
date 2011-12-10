@@ -1,9 +1,8 @@
 package no.entitas.gradle
-import no.entitas.gradle.git.GitVersion;
 
 import org.gradle.api.Project
 import org.gradle.api.Plugin
-import org.gradle.api.Task;
+import org.gradle.api.Task
 
 abstract class ReleasePlugin implements Plugin<Project> {
 
