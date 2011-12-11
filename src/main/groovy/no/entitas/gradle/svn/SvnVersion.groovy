@@ -72,23 +72,23 @@ class SvnVersion implements Version {
         createTag(svnClientManager, svnStatus, repoInfo, tagName);
         svnClientManager.dispose()
     }
-    
+
     private void checkUpToDateAndNoLocalModifications(SVNClientManager svnClientManager, RepoInfo repoInfo) {
         def containsLocalModifications = new LocalChangesChecker(project).
                 containsLocalModifications(svnClientManager, project.rootDir, repoInfo.headRev)
 
         if (containsLocalModifications) {
-            throw new RuntimeException("Workspace contains local modifications.");
+            throw new IllegalStateException("Workspace contains local modifications.");
         }
 
         def containsRemoteModifications = new UpToDateChecker(project).
                 containsRemoteModifications(svnClientManager, project.rootDir, repoInfo.headRev)
 
         if (containsRemoteModifications) {
-            throw new RuntimeException("Workspace is not up-to-date.")
+            throw new IllegalStateException("Workspace is not up-to-date.")
         }
     }
-    
+
     private RepoInfo getRepoInfo(SVNClientManager svnClientManager, SVNStatus svnStatus) {
         def url=svnStatus.URL;
         def headRevision=getHeadRevision(url,svnClientManager);
