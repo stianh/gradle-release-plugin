@@ -2,12 +2,19 @@ package no.entitas.gradle.svn;
 
 import java.util.logging.Level;
 
+import org.gradle.api.Project;
 import org.tmatesoft.svn.core.internal.util.DefaultSVNDebugLogger;
 import org.tmatesoft.svn.util.SVNLogType;
 
 public class NullSVNDebugLog extends DefaultSVNDebugLogger {
+    Project project;
+            
+    public NullSVNDebugLog(Project project) {
+        this.project = project;
+    }
+
     public void logError(SVNLogType logType, String message) {
-        System.out.println("ERROR: "+message);
+        project.getLogger().error("ERROR: "+message);
     }
     
     public void logError(SVNLogType logType, Throwable th){
@@ -15,7 +22,7 @@ public class NullSVNDebugLog extends DefaultSVNDebugLogger {
     };
 
     public void logSevere(SVNLogType logType, String message){
-        System.out.println("SEVERE: "+message);
+        project.getLogger().error("SEVERE: "+message);
     };
 
     public void logSevere(SVNLogType logType, Throwable th){

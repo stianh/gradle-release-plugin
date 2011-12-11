@@ -131,12 +131,12 @@ class GitVersion implements Version {
     }
 
     def tag(String tag, String message) {
-        println "tagging with $tag"
+        project.logger.info("tagging with $tag")
         gitExec(['tag', '-a', tag, '-m', message])
     }
 
     def pushTags() {
-        println "pushing tags"
+        project.logger.info("pushing tags")
         gitExec(['push', '--tags'])
     }
 

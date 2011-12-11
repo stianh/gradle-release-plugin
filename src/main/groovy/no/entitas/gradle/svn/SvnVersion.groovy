@@ -32,7 +32,7 @@ class SvnVersion implements Version {
         SVNRepositoryFactoryImpl.setup();
         FSRepositoryFactory.setup();
         DAVRepositoryFactory.setup();
-        SVNDebugLog.setDefaultLog(new NullSVNDebugLog());
+        SVNDebugLog.setDefaultLog(new NullSVNDebugLog(project));
         def svnClientManager=SVNClientManager.newInstance();
         this.svnStatus=svnClientManager.getStatusClient().doStatus(project.rootDir,false)
         this.repoInfo=getRepoInfo(svnClientManager,svnStatus)
@@ -62,8 +62,8 @@ class SvnVersion implements Version {
     }
     
 	def releasePrepare() {
-        println("RepoInfo: "+repoInfo)
-        println("Tag to create: "+tagName)
+        project.logger.debug("RepoInfo: $repoInfo")
+        project.logger.info("Tag to create: $tagName")
 	}
     
 	def releasePerform() {
@@ -74,13 +74,16 @@ class SvnVersion implements Version {
     }
     
     private void checkUpToDateAndNoLocalModifications(SVNClientManager svnClientManager, RepoInfo repoInfo) {
-        def containsLocalModifications=new LocalChangesChecker().containsLocalModifications(svnClientManager, project.rootDir, repoInfo.headRev)
-        
+        def containsLocalModifications = new LocalChangesChecker(project).
+                containsLocalModifications(svnClientManager, project.rootDir, repoInfo.headRev)
+
         if (containsLocalModifications) {
             throw new RuntimeException("Workspace contains local modifications.");
         }
-        
-        def containsRemoteModifications=new UpToDateChecker().containsRemoteModifications(svnClientManager, project.rootDir, repoInfo.headRev)
+
+        def containsRemoteModifications = new UpToDateChecker(project).
+                containsRemoteModifications(svnClientManager, project.rootDir, repoInfo.headRev)
+
         if (containsRemoteModifications) {
             throw new RuntimeException("Workspace is not up-to-date.")
         }
@@ -138,7 +141,7 @@ class SvnVersion implements Version {
         def copySrc=new SVNCopySource[1];
         copySrc[0]=new SVNCopySource(rev,rev,url)
         
-        println("Tagging release: "+tagName)
+        project.logger.info("Tagging release: $tagName")
         def dirsToMake=new SVNURL[1];
         dirsToMake[0]=destURL;
         def copyClient=svnClientManager.getCopyClient()        
