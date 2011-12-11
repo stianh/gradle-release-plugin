@@ -7,7 +7,6 @@ import org.gradle.api.Task
 abstract class ReleasePlugin implements Plugin<Project> {
 
 	def void apply(Project project) { 
-		setConvention(project);
 		def version = createVersion(project)
 		project.version = version
 		
@@ -66,5 +65,4 @@ abstract class ReleasePlugin implements Plugin<Project> {
     }
 	
 	abstract def Version createVersion(Project project);
-	abstract def void setConvention(Project project);
 }
