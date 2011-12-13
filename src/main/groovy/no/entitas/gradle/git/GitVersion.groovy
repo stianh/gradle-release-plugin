@@ -2,14 +2,12 @@ package no.entitas.gradle.git
 
 import no.entitas.gradle.Version
 import no.entitas.gradle.VersionNumber
-import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.process.internal.ExecException
 
 class GitVersion implements Version {
     Project project
     String versionNumber
-    Boolean release = null
     def releaseTagPattern = ~/^\S+-REL-\d+$/
 
     def GitVersion(project) {
@@ -18,13 +16,10 @@ class GitVersion implements Version {
         project.gradle.taskGraph.whenReady { graph ->
             if (graph.hasTask(':releasePrepare')) {
                 releasePreConditions()
-                release = true
                 versionNumber = getNextTagName()
             } else if (isOnReleaseTag() && !hasLocalModifications()) {
-                release = true
                 versionNumber = getCurrentVersion()
             } else {
-                release = false
                 versionNumber = getCurrentBranchName() + '-SNAPSHOT'
             }
         }
@@ -52,14 +47,6 @@ class GitVersion implements Version {
 
     String toString() {
         versionNumber
-    }
-
-    boolean isRelease() {
-        if (release == null) {
-            throw new GradleException("Can't determine whether this is a release build before the task graph is populated")
-        }
-
-        release
     }
 
     def releasePrepare() {
