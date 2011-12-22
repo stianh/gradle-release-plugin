@@ -68,7 +68,7 @@ defaultProject = {
             timezone '+1'
         }
         developer {
-            id 'mariusk'
+            id 'mkrabset'
             name 'Marius Krabset'
             email 'marius.krabset@gmail.com'
             roles {
