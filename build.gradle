@@ -17,6 +17,11 @@ dependencies {
     groovy 'org.codehaus.groovy:groovy-all:1.8.4'
 }
 
+task integrationTest(type: GradleBuild, dependsOn: build) {
+    dir = 'src/sample'
+    tasks = ['clean', 'build']
+}
+
 task sourcesJar(type: Jar, dependsOn: classes) {
      classifier = 'sources'
      from sourceSets.main.allSource
