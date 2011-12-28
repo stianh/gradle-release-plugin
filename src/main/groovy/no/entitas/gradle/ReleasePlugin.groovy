@@ -1,13 +1,23 @@
 package no.entitas.gradle
 
-import org.gradle.api.Project
 import org.gradle.api.Plugin
+import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.artifacts.Dependency
+import org.gradle.api.artifacts.ResolvableDependencies
 
 abstract class ReleasePlugin implements Plugin<Project> {
 	def void apply(Project project) {
 		def version = createVersion(project)
 		project.version = version
+
+        project.allprojects.each {
+            it.configurations.all {
+                incoming.afterResolve {
+                    ensureNoSnapshotDependencies(it)
+                }
+            }
+        }
 
         if (project.subprojects.isEmpty()) {
             Task releasePrepareTask = project.task('releasePrepare') << {
@@ -34,12 +44,6 @@ abstract class ReleasePlugin implements Plugin<Project> {
             buildAll.dependsOn([cleanAllTask, project.subprojects*.build])
 
             Task releasePrepareTask = project.task('releasePrepare') << {
-                def dependencies = getSnapshotDependencies(project)
-
-                if (!dependencies.isEmpty()) {
-                    throw new RuntimeException('Project contains SNAPSHOT dependencies: ' + dependencies)
-                }
-
                 version.releasePrepare()
             }
             releasePrepareTask.dependsOn(buildAll)
@@ -51,23 +55,19 @@ abstract class ReleasePlugin implements Plugin<Project> {
         }
     }
 
-    def getSnapshotDependencies(def project) {
+    def ensureNoSnapshotDependencies(ResolvableDependencies resolvableDependencies) {
         def deps = [] as Set
 
-        project.allprojects {
-            it.configurations.all {
-                it.resolvedConfiguration.resolvedArtifacts.each { artifact ->
-                    def dependency = artifact.resolvedDependency
-
-                    if (dependency.moduleVersion.contains("SNAPSHOT")) {
-                        deps.add("${dependency.moduleGroup}:${dependency.moduleName}:${dependency.moduleVersion}")
-                    }
-                }
+        resolvableDependencies.dependencies.each { Dependency dependency ->
+            if (dependency.version.contains("SNAPSHOT")) {
+                deps.add("${dependency.group}:${dependency.name}:${dependency.version}")
             }
         }
 
-        deps
+        if (!deps.isEmpty()) {
+            throw new IllegalStateException('Project contains SNAPSHOT dependencies: ' + deps)
+        }
     }
-	
-	abstract def Version createVersion(Project project)
+
+    abstract def Version createVersion(Project project)
 }
