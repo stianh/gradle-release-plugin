@@ -15,6 +15,11 @@ If you want the artifacts to be uploaded to Nexus and the releaseTag to be pushe
 **Notice:** The build will fail if you try to run releasePrepare again, with an error message telling you that there is no changes since the last release tag.  
 If you want to rebuild a release, just run a normal gradle build and the plugin will figure out that the current HEAD is a release tag and use the release version.(Same applies if you checkout a release tag and run build.)
 
+Installation 
+------------
+Clone the repo
+run: gradle clean install 
+
 Usage:
 ------
 
@@ -25,10 +30,11 @@ apply plugin: 'gitrelease' // or apply plugin: 'svnrelease'
 
 buildscript {
   repositories {
+    mavenLocal()
     mavenCentral()
   }
   dependencies {
-    classpath group: 'no.entitas.gradle', name: 'gradle-release-plugin', version: '1.5'
+    classpath group: 'no.entitas', name: 'gradle-release-plugin', version: '1.3'
   }
 }
 //Configures the plugin 
