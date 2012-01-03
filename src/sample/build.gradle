@@ -27,7 +27,7 @@ configure(project(':util')) {
 
     uploadArchives {
         repositories {
-            flatDir(dirs: file('repos'))
+            flatDir(dirs: file("${buildDir}/repos"))
         }
     }
 }
