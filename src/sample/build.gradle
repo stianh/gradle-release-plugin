@@ -33,6 +33,7 @@ configure(project(':util')) {
 }
 
 configure(project(':main')) {
+    // TODO should have a test of the release plugin failing when project has SNAPSHOT dependency
     apply plugin: 'java'
 }
 
