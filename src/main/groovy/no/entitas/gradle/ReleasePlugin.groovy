@@ -11,10 +11,10 @@ abstract class ReleasePlugin implements Plugin<Project> {
 		def version = createVersion(project)
 		project.version = version
 
-        project.allprojects.each {
-            it.configurations.all {
-                incoming.afterResolve {
-                    ensureNoSnapshotDependencies(it)
+        project.allprojects.each { currentProject ->
+            currentProject.configurations.all {
+                incoming.afterResolve { resolvableDependencies ->
+                    ensureNoSnapshotDependencies(resolvableDependencies)
                 }
             }
         }
