@@ -17,6 +17,7 @@ dependencies {
     groovy 'org.codehaus.groovy:groovy-all:1.8.4'
 }
 
+// TODO need to create svn/git repos to run the sample on
 task integrationTest(type: GradleBuild, dependsOn: build) {
     dir = 'src/sample'
     tasks = ['clean', 'build']
