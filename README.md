@@ -30,38 +30,30 @@ apply plugin: 'gitrelease' // or apply plugin: 'svnrelease'
 
 buildscript {
   repositories {
-    mavenLocal()
     mavenCentral()
   }
+
   dependencies {
-    classpath group: 'no.entitas', name: 'gradle-release-plugin', version: '1.3'
+    classpath group: 'no.entitas.gradle', name: 'gradle-release-plugin', version: '1.7'
   }
 }
-//Configures the plugin 
-gitRelease {
-    snapshotDistributionUrl = 'http://{repo}/snapshots'
-    releaseDistributionUrl = 'http://{repo}/releases'
-}
 
-//In a subproject that you want to be deployed in Nexus:
+//In a subproject that you want to be deployed to a Maven repository
 uploadArchives {
-    doFirst {
-        repositories.mavenDeployer {
-            uniqueVersion = false
-            if (version.release) {
-                repository(url: releaseDistributionUrl) {
-					//resolved from gradle.properties
-                    authentication(userName: project.nexusUsername, password: project.nexusPassword)
-                }
-            } else {
-				//resolved from gradle.properties
-                repository(url: snapshotDistributionUrl) {
-                    authentication(userName: project.nexusUsername, password: project.nexusPassword)
-                }
+  doFirst {
+    repositories.mavenDeployer {
+    uniqueVersion = false
 
-            }
-        }
+    repository(url: '...release distribution url...') {
+      //resolved from gradle.properties
+      authentication(userName: project.username, password: project.password)
     }
+
+    snapshotRepository(url: '...snapshot distribution url...') {
+      //resolved from gradle.properties
+      authentication(userName: project.username, password: project.password)
+    }
+  }
 }
 
 	
@@ -72,14 +64,14 @@ uploadArchives {
 Tasks:
 ------  
 **releasePrepare**  
-* Checks that there are no local modifications. (Git status)  
-* Checks that your current HEAD is not a release tag.  
-* The projects are built with version resolved from the latest git release tag + 1.  
+* Checks that there are no local modifications (git/svn status)
+* Checks that your current HEAD is not a release tag
+* The projects are built with version resolved from the latest git release tag + 1
 * Creates a git tag for you current head named ${branchName}-REL-${version}  
 
 **releasePerform**  
-* This task depends on the :releasePrepare task.  
-* Depends on uploadArtifacts and perform a git push tags.  
+* This task depends on the :releasePrepare task
+* Depends on uploadArtifacts and pushes tags if using git
 
 Known issues and limitations:
 -------------
