@@ -35,6 +35,10 @@ configure(project(':util')) {
 configure(project(':main')) {
     // TODO should have a test of the release plugin failing when project has SNAPSHOT dependency
     apply plugin: 'java'
+
+    dependencies {
+        // Testing fix for GH-16
+        compile files (System.getProperty("java.home")+"/../lib/tools.jar")
         // TODO Cannot enable this before the test having their own git/svn repo, as otherwise the build fails with
         // util having a SNAPSHOT version
         // compile project(":util")

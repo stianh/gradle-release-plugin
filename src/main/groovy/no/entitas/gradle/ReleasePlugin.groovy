@@ -59,7 +59,7 @@ abstract class ReleasePlugin implements Plugin<Project> {
         def deps = [] as Set
 
         resolvableDependencies.dependencies.each { Dependency dependency ->
-            if (dependency.version.contains("SNAPSHOT")) {
+            if (dependency.version?.contains("SNAPSHOT")) {
                 deps.add("${dependency.group}:${dependency.name}:${dependency.version}")
             }
         }
