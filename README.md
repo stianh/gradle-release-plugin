@@ -34,34 +34,26 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-    classpath group: 'no.entitas', name: 'gradle-release-plugin', version: '1.3'
+    classpath group: 'no.entitas.gradle', name: 'gradle-release-plugin', version: '1.7'
   }
 }
-//Configures the plugin 
-gitRelease {
-    snapshotDistributionUrl = 'http://{repo}/snapshots'
-    releaseDistributionUrl = 'http://{repo}/releases'
-}
 
-//In a subproject that you want to be deployed in Nexus:
+//In a subproject that you want to be deployed to a Maven repository
 uploadArchives {
-    doFirst {
-        repositories.mavenDeployer {
-            uniqueVersion = false
-            if (version.release) {
-                repository(url: releaseDistributionUrl) {
-					//resolved from gradle.properties
-                    authentication(userName: project.nexusUsername, password: project.nexusPassword)
-                }
-            } else {
-				//resolved from gradle.properties
-                repository(url: snapshotDistributionUrl) {
-                    authentication(userName: project.nexusUsername, password: project.nexusPassword)
-                }
+  doFirst {
+    repositories.mavenDeployer {
+    uniqueVersion = false
 
-            }
-        }
+    repository(url: '...release distribution url...') {
+      //resolved from gradle.properties
+      authentication(userName: project.username, password: project.password)
     }
+
+    snapshotRepository(url: '...snapshot distribution url...') {
+      //resolved from gradle.properties
+      authentication(userName: project.username, password: project.password)
+    }
+  }
 }
 
 	
