@@ -30,9 +30,9 @@ apply plugin: 'gitrelease' // or apply plugin: 'svnrelease'
 
 buildscript {
   repositories {
-    mavenLocal()
     mavenCentral()
   }
+
   dependencies {
     classpath group: 'no.entitas.gradle', name: 'gradle-release-plugin', version: '1.7'
   }
