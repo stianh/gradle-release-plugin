@@ -64,14 +64,14 @@ uploadArchives {
 Tasks:
 ------  
 **releasePrepare**  
-* Checks that there are no local modifications. (Git status)  
-* Checks that your current HEAD is not a release tag.  
-* The projects are built with version resolved from the latest git release tag + 1.  
+* Checks that there are no local modifications (git/svn status)
+* Checks that your current HEAD is not a release tag
+* The projects are built with version resolved from the latest git release tag + 1
 * Creates a git tag for you current head named ${branchName}-REL-${version}  
 
 **releasePerform**  
-* This task depends on the :releasePrepare task.  
-* Depends on uploadArtifacts and perform a git push tags.  
+* This task depends on the :releasePrepare task
+* Depends on uploadArtifacts and pushes tags if using git
 
 Known issues and limitations:
 -------------
