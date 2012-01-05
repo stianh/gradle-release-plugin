@@ -7,9 +7,12 @@ import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ResolvableDependencies
 
 abstract class ReleasePlugin implements Plugin<Project> {
-	def void apply(Project project) {
-		def version = createVersion(project)
-		project.version = version
+    def TASK_RELEASE_PREPARE = 'releasePrepare'
+    def TASK_RELEASE_PERFORM = 'releasePerform'
+
+    def void apply(Project project) {
+        def version = createVersion(project)
+        project.version = version
 
         project.allprojects.each { currentProject ->
             currentProject.configurations.all {
@@ -20,12 +23,12 @@ abstract class ReleasePlugin implements Plugin<Project> {
         }
 
         if (project.subprojects.isEmpty()) {
-            Task releasePrepareTask = project.task('releasePrepare') << {
+            Task releasePrepareTask = project.task(TASK_RELEASE_PREPARE) << {
                 version.releasePrepare()
             }
             releasePrepareTask.dependsOn(project.tasks.build)
 
-            Task performReleaseTask = project.task('releasePerform') << {
+            Task performReleaseTask = project.task(TASK_RELEASE_PERFORM) << {
                 version.releasePerform()
             }
             performReleaseTask.dependsOn([releasePrepareTask, project.tasks.uploadArchives])
@@ -43,12 +46,12 @@ abstract class ReleasePlugin implements Plugin<Project> {
             Task buildAll = project.task('buildAll') << {}
             buildAll.dependsOn([cleanAllTask, project.subprojects*.build])
 
-            Task releasePrepareTask = project.task('releasePrepare') << {
+            Task releasePrepareTask = project.task(TASK_RELEASE_PREPARE) << {
                 version.releasePrepare()
             }
             releasePrepareTask.dependsOn(buildAll)
 
-            Task performReleaseTask = project.task('releasePerform') << {
+            Task performReleaseTask = project.task(TASK_RELEASE_PERFORM) << {
                 version.releasePerform()
             }
             performReleaseTask.dependsOn([releasePrepareTask, project.subprojects*.uploadArchives])
