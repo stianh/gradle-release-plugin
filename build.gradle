@@ -38,8 +38,10 @@ artifacts {
      archives javadocJar
 }
 
-signing {
-    sign configurations.archives
+if (project.hasProperty('sign')) {
+    signing {
+        sign configurations.archives
+    }
 }
 
 defaultProject = {
@@ -123,6 +125,9 @@ installer = install.repositories.mavenInstaller
 deployer = uploadArchives.repositories.mavenDeployer
 
 [installer, deployer]*.pom fixedProject
-[installer, deployer]*.beforeDeployment {
-    signPom(it)
+
+if (project.hasProperty('sign')) {
+    [installer, deployer]*.beforeDeployment {
+        signPom(it)
+    }
 }
