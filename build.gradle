@@ -104,21 +104,9 @@ fixedProject = {
     }
 }
 
-install.repositories.mavenInstaller {
-    pom fixedProject
-
-    beforeDeployment {
-        MavenDeployment deployment -> signPom(deployment)
-    }
-}
-
 uploadArchives.repositories.mavenDeployer {
-    pom fixedProject
     uniqueVersion = false
 
-    beforeDeployment {
-        MavenDeployment deployment -> signPom(deployment)
-    }
 
     snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
         authentication(userName: sonatypeUsername, password: sonatypePassword)
@@ -127,4 +115,12 @@ uploadArchives.repositories.mavenDeployer {
     repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
         authentication(userName: sonatypeUsername, password: sonatypePassword)
     }
+}
+
+installer = install.repositories.mavenInstaller
+deployer = uploadArchives.repositories.mavenDeployer
+
+[installer, deployer]*.pom fixedProject
+[installer, deployer]*.beforeDeployment {
+    signPom(it)
 }
