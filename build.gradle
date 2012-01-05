@@ -4,7 +4,7 @@ apply plugin: 'groovy'
 apply plugin: 'maven'
 apply plugin: 'signing'
 
-version = '1.7'
+version = '1.8'
 group = 'no.entitas.gradle'
 
 repositories {
@@ -38,8 +38,10 @@ artifacts {
      archives javadocJar
 }
 
-signing {
-    sign configurations.archives
+if (project.hasProperty('sign')) {
+    signing {
+        sign configurations.archives
+    }
 }
 
 defaultProject = {
@@ -104,21 +106,11 @@ fixedProject = {
     }
 }
 
-install.repositories.mavenInstaller {
-    pom fixedProject
-
-    beforeDeployment {
-        MavenDeployment deployment -> signPom(deployment)
-    }
-}
-
 uploadArchives.repositories.mavenDeployer {
-    pom fixedProject
     uniqueVersion = false
 
-    beforeDeployment {
-        MavenDeployment deployment -> signPom(deployment)
-    }
+    if (!project.hasProperty('sonatypeUsername')) sonatypeUsername = ''
+    if (!project.hasProperty('sonatypePassword')) sonatypePassword = ''
 
     snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
         authentication(userName: sonatypeUsername, password: sonatypePassword)
@@ -126,5 +118,16 @@ uploadArchives.repositories.mavenDeployer {
 
     repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
         authentication(userName: sonatypeUsername, password: sonatypePassword)
+    }
+}
+
+installer = install.repositories.mavenInstaller
+deployer = uploadArchives.repositories.mavenDeployer
+
+[installer, deployer]*.pom fixedProject
+
+if (project.hasProperty('sign')) {
+    [installer, deployer]*.beforeDeployment {
+        signPom(it)
     }
 }

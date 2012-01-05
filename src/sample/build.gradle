@@ -41,7 +41,7 @@ configure(project(':main')) {
         compile files (System.getProperty("java.home")+"/../lib/tools.jar")
         // TODO Cannot enable this before the test having their own git/svn repo, as otherwise the build fails with
         // util having a SNAPSHOT version
-        // compile project(":util")
+        compile project(":util")
     }
 }
 

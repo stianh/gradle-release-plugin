@@ -7,25 +7,30 @@ import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ResolvableDependencies
 
 abstract class ReleasePlugin implements Plugin<Project> {
-	def void apply(Project project) {
-		def version = createVersion(project)
-		project.version = version
+    def TASK_RELEASE_PREPARE = 'releasePrepare'
+    def TASK_RELEASE_PERFORM = 'releasePerform'
+
+    def void apply(Project project) {
+        def version = createVersion(project)
+        project.version = version
 
         project.allprojects.each { currentProject ->
             currentProject.configurations.all {
                 incoming.afterResolve { resolvableDependencies ->
-                    ensureNoSnapshotDependencies(resolvableDependencies)
+                    if (project.gradle.taskGraph.hasTask(TASK_RELEASE_PREPARE)) {
+                        ensureNoSnapshotDependencies(resolvableDependencies)
+                    }
                 }
             }
         }
 
         if (project.subprojects.isEmpty()) {
-            Task releasePrepareTask = project.task('releasePrepare') << {
+            Task releasePrepareTask = project.task(TASK_RELEASE_PREPARE) << {
                 version.releasePrepare()
             }
             releasePrepareTask.dependsOn(project.tasks.build)
 
-            Task performReleaseTask = project.task('releasePerform') << {
+            Task performReleaseTask = project.task(TASK_RELEASE_PERFORM) << {
                 version.releasePerform()
             }
             performReleaseTask.dependsOn([releasePrepareTask, project.tasks.uploadArchives])
@@ -43,12 +48,12 @@ abstract class ReleasePlugin implements Plugin<Project> {
             Task buildAll = project.task('buildAll') << {}
             buildAll.dependsOn([cleanAllTask, project.subprojects*.build])
 
-            Task releasePrepareTask = project.task('releasePrepare') << {
+            Task releasePrepareTask = project.task(TASK_RELEASE_PREPARE) << {
                 version.releasePrepare()
             }
             releasePrepareTask.dependsOn(buildAll)
 
-            Task performReleaseTask = project.task('releasePerform') << {
+            Task performReleaseTask = project.task(TASK_RELEASE_PERFORM) << {
                 version.releasePerform()
             }
             performReleaseTask.dependsOn([releasePrepareTask, project.subprojects*.uploadArchives])
@@ -59,13 +64,13 @@ abstract class ReleasePlugin implements Plugin<Project> {
         def deps = [] as Set
 
         resolvableDependencies.dependencies.each { Dependency dependency ->
-            if (dependency.version?.contains("SNAPSHOT")) {
+            if (dependency.version?.contains('SNAPSHOT')) {
                 deps.add("${dependency.group}:${dependency.name}:${dependency.version}")
             }
         }
 
         if (!deps.isEmpty()) {
-            throw new IllegalStateException('Project contains SNAPSHOT dependencies: ' + deps)
+            throw new IllegalStateException("Project contains SNAPSHOT dependencies: ${deps}")
         }
     }
 
