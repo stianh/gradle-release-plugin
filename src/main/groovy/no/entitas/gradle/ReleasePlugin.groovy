@@ -17,7 +17,9 @@ abstract class ReleasePlugin implements Plugin<Project> {
         project.allprojects.each { currentProject ->
             currentProject.configurations.all {
                 incoming.afterResolve { resolvableDependencies ->
-                    ensureNoSnapshotDependencies(resolvableDependencies)
+                    if (project.gradle.taskGraph.hasTask(TASK_RELEASE_PREPARE)) {
+                        ensureNoSnapshotDependencies(resolvableDependencies)
+                    }
                 }
             }
         }
