@@ -15,7 +15,11 @@
  */
 package no.entitas.gradle
 
-interface Version {
-    def releasePrepare();
-	def releasePerform();
+/**
+ * Extension object for the release plugin with options that the user can set
+ *
+ * @author Stig Kleppe-Jorgensen, 2012.01.12
+ */
+class ReleasePluginExtension {
+    def boolean failOnSnapshotDependencies = true
 }

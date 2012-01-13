@@ -1,3 +1,18 @@
+/*
+ * Copyright 2011- the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package no.entitas.gradle
 
 import org.gradle.api.Plugin
@@ -13,12 +28,17 @@ abstract class ReleasePlugin implements Plugin<Project> {
     def void apply(Project project) {
         def version = createVersion(project)
         project.version = version
+        project.extensions.release = new ReleasePluginExtension()
 
-        project.allprojects.each { currentProject ->
-            currentProject.configurations.all {
-                incoming.afterResolve { resolvableDependencies ->
-                    if (project.gradle.taskGraph.hasTask(TASK_RELEASE_PREPARE)) {
-                        ensureNoSnapshotDependencies(resolvableDependencies)
+        // TODO add a build listener of sorts instead? So that we are sure the task graph is populated, which is not
+        // always the case now, for example (it seems) when another plugin adds a configuration
+        if (project.release.failOnSnapshotDependencies) {
+            project.allprojects.each { currentProject ->
+                currentProject.configurations.all {
+                    incoming.afterResolve { resolvableDependencies ->
+                        if (project.gradle.taskGraph.hasTask(TASK_RELEASE_PREPARE)) {
+                            ensureNoSnapshotDependencies(resolvableDependencies)
+                        }
                     }
                 }
             }

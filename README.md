@@ -13,7 +13,8 @@ A release tag with the version name will be created in git/svn. (The tag will NO
 If you want the artifacts to be uploaded to Nexus and the releaseTag to be pushed, run the releasePerform task.(Will run the releasePrepare also.)
 
 **Notice:** The build will fail if you try to run releasePrepare again, with an error message telling you that there is no changes since the last release tag.  
-If you want to rebuild a release, just run a normal gradle build and the plugin will figure out that the current HEAD is a release tag and use the release version.(Same applies if you checkout a release tag and run build.)
+If you want to rebuild a release, just run a normal gradle build and the plugin will figure out that the current HEAD is a release tag and use the release version.
+The same applies if you checkout a release tag and run build.
 
 Installation 
 ------------
@@ -25,7 +26,7 @@ Usage:
 
 Use the plugin:
 
-<pre><code>
+```groovy
 apply plugin: 'gitrelease' // or apply plugin: 'svnrelease'
 
 buildscript {
@@ -34,11 +35,11 @@ buildscript {
   }
 
   dependencies {
-    classpath group: 'no.entitas.gradle', name: 'gradle-release-plugin', version: '1.7'
+    classpath group: 'no.entitas.gradle', name: 'gradle-release-plugin', version: '1.9'
   }
 }
 
-//In a subproject that you want to be deployed to a Maven repository
+// In a subproject that you want to be deployed to a Maven repository
 uploadArchives {
   doFirst {
     repositories.mavenDeployer {
@@ -55,14 +56,12 @@ uploadArchives {
     }
   }
 }
+```
 
-	
-</code></pre>
-	
 **Notice:** In a multi-project build, the release plugin should only be applied at the top level. 
 
-Tasks:
-------  
+Tasks
+------
 **releasePrepare**  
 * Checks that there are no local modifications (git/svn status)
 * Checks that your current HEAD is not a release tag
@@ -73,8 +72,8 @@ Tasks:
 * This task depends on the :releasePrepare task
 * Depends on uploadArtifacts and pushes tags if using git
 
-Known issues and limitations:
+Known issues and limitations
 -------------
-Only java project support at the moment.  
-Output from git invocations leaks to the console.  
-The releasePerform task has only been tested with Nexus and http upload.  
+* Only java project support at the moment
+* Output from git invocations leaks to the console
+* The releasePerform task has only been tested with Nexus and http upload
