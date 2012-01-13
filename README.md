@@ -34,11 +34,11 @@ buildscript {
   }
 
   dependencies {
-    classpath group: 'no.entitas.gradle', name: 'gradle-release-plugin', version: '1.7'
+    classpath group: 'no.entitas.gradle', name: 'gradle-release-plugin', version: '1.9'
   }
 }
 
-//In a subproject that you want to be deployed to a Maven repository
+// In a subproject that you want to be deployed to a Maven repository
 uploadArchives {
   doFirst {
     repositories.mavenDeployer {
