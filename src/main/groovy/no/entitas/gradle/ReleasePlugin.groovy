@@ -18,8 +18,9 @@ package no.entitas.gradle
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.Dependency
-import org.gradle.api.artifacts.ResolvableDependencies
+import org.gradle.api.execution.TaskExecutionGraph
 
 abstract class ReleasePlugin implements Plugin<Project> {
     def TASK_RELEASE_PREPARE = 'releasePrepare'
@@ -30,14 +31,14 @@ abstract class ReleasePlugin implements Plugin<Project> {
         project.version = version
         project.extensions.release = new ReleasePluginExtension()
 
-        // TODO add a build listener of sorts instead? So that we are sure the task graph is populated, which is not
-        // always the case now, for example (it seems) when another plugin adds a configuration
         if (project.release.failOnSnapshotDependencies) {
             project.allprojects.each { currentProject ->
-                currentProject.configurations.all {
-                    incoming.afterResolve { resolvableDependencies ->
-                        if (project.gradle.taskGraph.hasTask(TASK_RELEASE_PREPARE)) {
-                            ensureNoSnapshotDependencies(resolvableDependencies)
+                currentProject.gradle.taskGraph.whenReady { TaskExecutionGraph taskGraph ->
+                    if (taskGraph.hasTask(TASK_RELEASE_PREPARE)) {
+                        currentProject.configurations.all.each { configuration ->
+                            project.logger.info(
+                                "Checking for snapshot dependencies in $currentProject.path -> $configuration.name")
+                            ensureNoSnapshotDependencies(configuration)
                         }
                     }
                 }
@@ -80,17 +81,17 @@ abstract class ReleasePlugin implements Plugin<Project> {
         }
     }
 
-    def ensureNoSnapshotDependencies(ResolvableDependencies resolvableDependencies) {
-        def deps = [] as Set
+    def ensureNoSnapshotDependencies(Configuration configuration) {
+        def snapshotDependencies = [] as Set
 
-        resolvableDependencies.dependencies.each { Dependency dependency ->
+        configuration.allDependencies.each { Dependency dependency ->
             if (dependency.version?.contains('SNAPSHOT')) {
-                deps.add("${dependency.group}:${dependency.name}:${dependency.version}")
+                snapshotDependencies.add("${dependency.group}:${dependency.name}:${dependency.version}")
             }
         }
 
-        if (!deps.isEmpty()) {
-            throw new IllegalStateException("Project contains SNAPSHOT dependencies: ${deps}")
+        if (!snapshotDependencies.isEmpty()) {
+            throw new IllegalStateException("Project contains SNAPSHOT dependencies: ${snapshotDependencies}")
         }
     }
 
