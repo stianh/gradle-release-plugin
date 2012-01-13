@@ -24,7 +24,7 @@ subprojects {
 configure(project(':util')) {
     apply plugin: 'java'
     version = this.version
-    release.snapshotDetectionEnabled = false
+    release.failOnSnapshotDependencies = false
 
     uploadArchives {
         repositories {
