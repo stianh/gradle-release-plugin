@@ -20,40 +20,37 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.Dependency
-import org.gradle.api.execution.TaskExecutionGraph
 
 abstract class ReleasePlugin implements Plugin<Project> {
     def TASK_RELEASE_PREPARE = 'releasePrepare'
     def TASK_RELEASE_PERFORM = 'releasePerform'
+    def logger
 
     def void apply(Project project) {
         def version = createVersion(project)
         project.version = version
         project.extensions.release = new ReleasePluginExtension()
+        logger = project.logger
 
-        if (project.release.failOnSnapshotDependencies) {
-            project.allprojects.each { currentProject ->
-                currentProject.gradle.taskGraph.whenReady { TaskExecutionGraph taskGraph ->
-                    if (taskGraph.hasTask(TASK_RELEASE_PREPARE)) {
-                        currentProject.configurations.all.each { configuration ->
-                            project.logger.info(
-                                "Checking for snapshot dependencies in $currentProject.path -> $configuration.name")
-                            ensureNoSnapshotDependencies(configuration)
-                        }
+        Task releasePrepareTask = project.task(TASK_RELEASE_PREPARE) << {
+            if (project.release.failOnSnapshotDependencies) {
+                project.allprojects.each { currentProject ->
+                    currentProject.configurations.each { configuration ->
+                        logger.info("Checking for snapshot dependencies in $currentProject.path -> $configuration.name")
+                        ensureNoSnapshotDependencies(configuration)
                     }
                 }
             }
+
+            version.releasePrepare()
+        }
+
+        Task performReleaseTask = project.task(TASK_RELEASE_PERFORM) << {
+            version.releasePerform()
         }
 
         if (project.subprojects.isEmpty()) {
-            Task releasePrepareTask = project.task(TASK_RELEASE_PREPARE) << {
-                version.releasePrepare()
-            }
             releasePrepareTask.dependsOn(project.tasks.build)
-
-            Task performReleaseTask = project.task(TASK_RELEASE_PERFORM) << {
-                version.releasePerform()
-            }
             performReleaseTask.dependsOn([releasePrepareTask, project.tasks.uploadArchives])
         } else {
             /*
@@ -69,14 +66,7 @@ abstract class ReleasePlugin implements Plugin<Project> {
             Task buildAll = project.task('buildAll') << {}
             buildAll.dependsOn([cleanAllTask, project.subprojects*.build])
 
-            Task releasePrepareTask = project.task(TASK_RELEASE_PREPARE) << {
-                version.releasePrepare()
-            }
             releasePrepareTask.dependsOn(buildAll)
-
-            Task performReleaseTask = project.task(TASK_RELEASE_PERFORM) << {
-                version.releasePerform()
-            }
             performReleaseTask.dependsOn([releasePrepareTask, project.subprojects*.uploadArchives])
         }
     }
@@ -85,6 +75,8 @@ abstract class ReleasePlugin implements Plugin<Project> {
         def snapshotDependencies = [] as Set
 
         configuration.allDependencies.each { Dependency dependency ->
+            logger.debug("  Checking ${dependency.name}")
+
             if (dependency.version?.contains('SNAPSHOT')) {
                 snapshotDependencies.add("${dependency.group}:${dependency.name}:${dependency.version}")
             }
