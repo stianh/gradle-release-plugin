@@ -28,12 +28,17 @@ abstract class ReleasePlugin implements Plugin<Project> {
     def void apply(Project project) {
         def version = createVersion(project)
         project.version = version
+        project.extensions.release = new ReleasePluginExtension()
 
-        project.allprojects.each { currentProject ->
-            currentProject.configurations.all {
-                incoming.afterResolve { resolvableDependencies ->
-                    if (project.gradle.taskGraph.hasTask(TASK_RELEASE_PREPARE)) {
-                        ensureNoSnapshotDependencies(resolvableDependencies)
+        // TODO add a build listener of sorts instead? So that we are sure the task graph is populated, which is not
+        // always the case now, for example (it seems) when another plugin adds a configuration
+        if (project.release.failOnSnapshotDependencies) {
+            project.allprojects.each { currentProject ->
+                currentProject.configurations.all {
+                    incoming.afterResolve { resolvableDependencies ->
+                        if (project.gradle.taskGraph.hasTask(TASK_RELEASE_PREPARE)) {
+                            ensureNoSnapshotDependencies(resolvableDependencies)
+                        }
                     }
                 }
             }
