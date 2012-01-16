@@ -17,7 +17,7 @@ apply plugin: 'groovy'
 apply plugin: 'maven'
 apply plugin: 'signing'
 
-version = '1.10'
+version = '1.11'
 group = 'no.entitas.gradle'
 
 repositories {
