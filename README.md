@@ -35,7 +35,7 @@ buildscript {
   }
 
   dependencies {
-    classpath group: 'no.entitas.gradle', name: 'gradle-release-plugin', version: '1.10'
+    classpath group: 'no.entitas.gradle', name: 'gradle-release-plugin', version: '1.11'
   }
 }
 
