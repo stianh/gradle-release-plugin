@@ -21,10 +21,12 @@ class VersionNumber implements Comparable {
     BigDecimal nextVersion
 
     public VersionNumber(String tagName) {
-        def tagNameParts = tagName.split('-')
+        def tagNameParts = tagName.split('-').toList()
         version = new BigDecimal(tagNameParts[-1])
         nextVersion = version.add(BigDecimal.ONE)
-        branchName = tagNameParts[0]
+        tagNameParts.pop()
+        tagNameParts.pop()
+        branchName = tagNameParts.join('-')
     }
 
     def nextVersionTag() {

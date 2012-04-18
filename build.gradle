@@ -17,7 +17,7 @@ apply plugin: 'groovy'
 apply plugin: 'maven'
 apply plugin: 'signing'
 
-version = '1.11'
+version = '1.12'
 group = 'no.entitas.gradle'
 
 repositories {
@@ -51,10 +51,9 @@ artifacts {
      archives javadocJar
 }
 
-if (project.hasProperty('sign')) {
-    signing {
-        sign configurations.archives
-    }
+signing {
+    required = { gradle.taskGraph.hasTask("uploadArchives") && !version.endsWith("SNAPSHOT") }
+    sign configurations.archives
 }
 
 defaultProject = {
@@ -139,8 +138,6 @@ deployer = uploadArchives.repositories.mavenDeployer
 
 [installer, deployer]*.pom fixedProject
 
-if (project.hasProperty('sign')) {
-    [installer, deployer]*.beforeDeployment {
-        signPom(it)
-    }
+[installer, deployer]*.beforeDeployment {
+    signPom(it)
 }
