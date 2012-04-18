@@ -29,13 +29,23 @@ class GitVersion implements Version {
         this.project = project
 
         project.gradle.taskGraph.whenReady { graph ->
+            this.project.logger.info("Setting version number...")
+
             if (graph.hasTask(':releasePrepare')) {
                 releasePreConditions()
                 versionNumber = getNextTagName()
-            } else if (isOnReleaseTag() && !hasLocalModifications()) {
-                versionNumber = getCurrentVersion()
+                this.project.logger.info("  New version number for release build is ${versionNumber}")
+            } else if (isOnReleaseTag()) {
+                if (hasLocalModifications()) {
+                    versionNumber = getCurrentBranchName() + '-SNAPSHOT'
+                    this.project.logger.info("  Version number for build on release tag with local modification is ${versionNumber}")
+                } else {
+                    versionNumber = getCurrentVersion()
+                    this.project.logger.info("  Version number for build on release tag is ${versionNumber}")
+                }
             } else {
                 versionNumber = getCurrentBranchName() + '-SNAPSHOT'
+                this.project.logger.info("  Version number for regular build is ${versionNumber}")
             }
         }
     }
@@ -49,7 +59,6 @@ class GitVersion implements Version {
         if (isOnReleaseTag()) {
             throw new RuntimeException('No changes since last tag.')
         }
-
 
         if (branchIsAheadOfRemote()) {
             throw new RuntimeException('Project contains unpushed commits');
