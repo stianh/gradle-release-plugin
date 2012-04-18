@@ -101,7 +101,12 @@ class GitVersion implements Version {
     }
 
     def getCurrentBranchName() {
-        gitExec(['name-rev', '--name-only', 'HEAD'], true)
+        def branchName = gitExec(['name-rev', '--name-only', 'HEAD'], true)
+        normalizeBranchName(branchName)
+    }
+
+    def normalizeBranchName(String branchName) {
+        branchName.replaceAll('[^\\w\\.\\-\\_]', '_');
     }
 
     def getNextTagName() {
