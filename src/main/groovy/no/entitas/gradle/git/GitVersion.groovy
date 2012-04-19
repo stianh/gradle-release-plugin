@@ -110,7 +110,17 @@ class GitVersion implements Version {
     }
 
     def getCurrentBranchName() {
-        def branchName = gitExec(['name-rev', '--name-only', 'HEAD'], true)
+        def refName = gitExec(['symbolic-ref', '-q', 'HEAD'], true)
+
+        if (!refName) {
+            throw new RuntimeException('Could not find the current branch name');
+        } else if (!refName.startsWith('refs/heads/')) {
+            throw new RuntimeException('Checkout the branch to release from');
+        }
+
+        def prefixLength = 'refs/heads/'.length()
+        def branchName = refName[prefixLength..-1]
+
         normalizeBranchName(branchName)
     }
 
