@@ -1,3 +1,5 @@
+![CI status](https://secure.travis-ci.org/stianh/gradle-release-plugin.png)
+
 Gradle release plugin(Git and Subversion)
 ================================
 This is a very simple gradle plugin for automating release management when using git or Subversion as vcs.  
