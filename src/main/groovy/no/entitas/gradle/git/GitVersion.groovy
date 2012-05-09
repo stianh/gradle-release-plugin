@@ -16,7 +16,7 @@
 package no.entitas.gradle.git
 
 import no.entitas.gradle.Version
-import no.entitas.gradle.VersionNumber
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.process.internal.ExecException
 
@@ -99,9 +99,9 @@ class GitVersion implements Version {
 
     def getCurrentVersion() {
         try {
-            new VersionNumber(tagNameOnCurrentRevision())
+            tagNameOnCurrentRevision()
         } catch (ExecException e) {
-            throw new RuntimeException("Not on a tag.")
+            throw new GradleException("Not on a tag.", e)
         }
     }
 
@@ -130,31 +130,32 @@ class GitVersion implements Version {
 
     def getNextTagName() {
         def currentBranch = getCurrentBranchName()
-        def latestTagVersion = getLatestTag(currentBranch)
+        def latestReleaseTag = getLatestReleaseTag(currentBranch)
 
-        if (latestTagVersion == null) {
-            "$currentBranch-REL-1"
+        if (latestReleaseTag) {
+            nextReleaseTag(latestReleaseTag)
         } else {
-            latestTagVersion.nextVersionTag()
+            "$currentBranch-REL-1"
         }
     }
 
-    def getLatestTag(String currentBranch) {
+    def nextReleaseTag(String previousReleaseTag) {
+        def tagNameParts = previousReleaseTag.split('-').toList()
+        def version = tagNameParts[-1]
+        def nextVersion = project.release.versionStrategy.call(version)
+
+        tagNameParts.pop()
+        tagNameParts.pop()
+        def branchName = tagNameParts.join('-')
+
+        "$branchName-REL-$nextVersion"
+    }
+
+    def getLatestReleaseTag(String currentBranch) {
         def tagSearchPattern = "${currentBranch}-REL-*"
-        def tags = getTagNames(tagSearchPattern)
 
-        if (tags != null) {
-            def versionNumbers = tags.collect {new VersionNumber(it)}
-            GroovyCollections.max(versionNumbers)
-        }
-    }
-
-    def getTagNames(String tagSearchPattern) {
-        def allReleaseTagNames = gitExec(['tag', '-l', tagSearchPattern])
-        
-        if (allReleaseTagNames) {
-            allReleaseTagNames.split('\n')
-        }
+        gitExec(['for-each-ref', '--count=1', "--sort=-taggerdate",
+            "--format=%(refname:short)", "refs/tags/${tagSearchPattern}"])
     }
 
     def tag(String tag, String message) {

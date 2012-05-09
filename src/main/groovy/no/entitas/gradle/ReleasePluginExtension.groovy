@@ -22,4 +22,5 @@ package no.entitas.gradle
  */
 class ReleasePluginExtension {
     def boolean failOnSnapshotDependencies = true
+    def versionStrategy = { new BigDecimal(it).add(BigDecimal.ONE).toPlainString() }
 }
