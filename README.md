@@ -1,31 +1,30 @@
-Gradle release plugin (Git and Subversion) [![Build Status](http://travis-ci.org/stianh/gradle-release-plugin.png?branch=develop)](http://travis-ci.org/stianh/gradle-release-plugin)
-==========================================
+#Gradle release plugin (Git and Subversion) [![Build Status](http://travis-ci.org/stianh/gradle-release-plugin.png?branch=develop)](http://travis-ci.org/stianh/gradle-release-plugin)
 
-This is a very simple gradle plugin for automating release management when using git or Subversion as vcs.  
-The plugin is responsible for knowing the version to build at all times.  
-You should not use this plugin if you want/need to be in control of the version name/number.  
+This is a Gradle plugin that makes it very simple to automate release management when using
+git or Subversion as vcs. The plugin is responsible for knowing the version to build at all
+times. You should not use this plugin if you want/need to be in control of the version
+name/number.
 
-In the case of a normal gradle build, the plugin generates a version name based on the current branch name ${branchName}-SNAPSHOT.
+In the case of a normal gradle build, the plugin generates a version name based on the
+current branch name ${branchName}-SNAPSHOT.
 
-If you run the task releasePrepare, the plugin will query git/svn for the latest release tag and add one.  
-The artifacts will have a version name like master-REL-1 (if this is the first time you run :releasePrepare)  
-A release tag with the version name will be created in git/svn. (The tag will NOT be pushed in this task when using git.)
+If you run the task releasePrepare, the plugin will query git/svn for the latest release tag
+and add one to the number. The artifacts will have a version name like master-REL-1 (if this
+is the first time you run :releasePrepare). A release tag with the version name will be
+created in git/svn. (The tag will NOT be pushed in this task when using git.)
 
-If you want the artifacts to be uploaded to Nexus and the releaseTag to be pushed, run the releasePerform task.(Will run the releasePrepare also.)
+If you want the artifacts to be uploaded and the releaseTag to be pushed, run the
+releasePerform task. This task depends on releasePrepare so it will run first.
 
-**Notice:** The build will fail if you try to run releasePrepare again, with an error message telling you that there is no changes since the last release tag.  
-If you want to rebuild a release, just run a normal gradle build and the plugin will figure out that the current HEAD is a release tag and use the release version.
-The same applies if you checkout a release tag and run build.
+**Notice:** The build will fail if you try to run releasePrepare again, with an error message
+telling you that there is no changes since the last release tag. If you want to rebuild a
+release, just run a normal gradle build and the plugin will figure out that the current HEAD
+is a release tag and use the release version. The same applies if you checkout a release tag
+and run build.
 
-Installation 
-------------
-Clone the repo
-run: gradle clean install 
+##Usage
 
-Usage:
-------
-
-Use the plugin:
+Add the following to your build file to setup where the plugin should be downloaded:
 
 ```groovy
 apply plugin: 'gitrelease' // or apply plugin: 'svnrelease'
@@ -36,11 +35,18 @@ buildscript {
   }
 
   dependencies {
-    classpath group: 'no.entitas.gradle', name: 'gradle-release-plugin', version: '1.11'
+    classpath group: 'no.entitas.gradle', name: 'gradle-release-plugin', version: '1.14'
   }
 }
+```
 
-// In a subproject that you want to be deployed to a Maven repository
+**Notice:** This *must* be in the root build file in a multi-module build, that is,
+the release plugin can only be applied at the top level.
+
+To setup where your artifacts should be deployed, use a regular `uploadArchives` section.
+This is an example of deploying to a Maven repository:
+
+```groovy
 uploadArchives {
   doFirst {
     repositories.mavenDeployer {
@@ -59,22 +65,24 @@ uploadArchives {
 }
 ```
 
-**Notice:** In a multi-project build, the release plugin should only be applied at the top level. 
+In a multi-module build this will typically be setup for each subproject that needs to be
+deployed.
 
-Tasks
-------
+
+##Tasks
+
 **releasePrepare**  
 * Checks that there are no local modifications (git/svn status)
 * Checks that your current HEAD is not a release tag
 * The projects are built with version resolved from the latest git release tag + 1
-* Creates a git tag for you current head named ${branchName}-REL-${version}  
+* Creates a git tag for your current head named ${branchName}-REL-${version}  
 
 **releasePerform**  
 * This task depends on the :releasePrepare task
 * Depends on uploadArtifacts and pushes tags if using git
 
-Known issues and limitations
--------------
-* Only java project support at the moment
-* Output from git invocations leaks to the console
+
+##Known issues and limitations
+
+* Only tested on Java projects
 * The releasePerform task has only been tested with Nexus and http upload
