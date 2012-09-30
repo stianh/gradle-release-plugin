@@ -53,7 +53,7 @@ class GitVersion implements Version {
     // TODO Ensure that we are on a branch
     def releasePreConditions() {
         if (hasLocalModifications()) {
-            throw new RuntimeException('Uncommited changes found in the source tree:\n' + getLocalModifications())
+            throw new RuntimeException('Uncommitted changes found in the source tree:\n' + getLocalModifications())
         }
 
         if (isOnReleaseTag()) {
