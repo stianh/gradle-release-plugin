@@ -15,6 +15,11 @@ import org.gradle.api.execution.TaskExecutionGraph
 import org.gradle.api.invocation.Gradle
 import org.gradle.api.logging.Logger
 import org.gradle.api.plugins.ExtensionContainer
+import org.gradle.tooling.GradleConnectionException
+import org.gradle.tooling.GradleConnector
+import org.gradle.tooling.ProgressEvent
+import org.gradle.tooling.ProgressListener
+import org.gradle.tooling.ResultHandler
 import spock.lang.Specification
 
 /**
@@ -57,6 +62,36 @@ class GitVersionTest extends Specification {
 
         then:
         gitVersion.versionNumber == 'master-REL-2'
+    }
+
+    def 'test run gradle project'() {
+        expect:
+        def projectConnector =
+            GradleConnector.newConnector().
+                forProjectDirectory('/tmp/gradletest' as File).
+                useInstallation('/usr/local/Cellar/gradle/1.1/libexec' as File).
+                connect()
+
+        try {
+            projectConnector.newBuild().forTasks('clean').addProgressListener(new ProgressListener() {
+                @Override
+                void statusChanged(ProgressEvent progressEvent) {
+                    println progressEvent.description
+                }
+            }).run(new ResultHandler<Void>() {
+                @Override
+                void onComplete(Void t) {
+                    println 'Complete'
+                }
+
+                @Override
+                void onFailure(GradleConnectionException e) {
+                    println e
+                }
+            })
+        } finally {
+            projectConnector.close()
+        }
     }
 
     def createVersion(String tagName, boolean clean, boolean hasTaskReleasePrepare) {
