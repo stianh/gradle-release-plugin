@@ -14,59 +14,81 @@
  * limitations under the License.
  */
 package no.entitas.gradle.git
+import java.util.regex.Pattern
 
 import no.entitas.gradle.Version
+import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.Status
+import org.eclipse.jgit.lib.BranchTrackingStatus
+import org.eclipse.jgit.lib.Constants
+import org.eclipse.jgit.lib.IndexDiff
+import org.eclipse.jgit.lib.Repository
+import org.eclipse.jgit.revwalk.RevWalk
+import org.eclipse.jgit.treewalk.FileTreeIterator
 import org.gradle.api.GradleException
 import org.gradle.api.Project
-import org.gradle.process.internal.ExecException
+import org.gradle.api.resources.MissingResourceException
 
 class GitVersion implements Version {
-    Project project
-    String versionNumber
-    def releaseTagPattern = ~/^\S+-REL-\d+$/
+    Pattern releaseTagPattern = ~/^\S+-REL-\d+$/
 
-    def GitVersion(project) {
+    Project project
+    Repository repository
+    Map tagsKeyedOnCommitsObjectId
+    String versionNumber
+    Status status
+
+    def GitVersion(Project project, Repository repository) {
         this.project = project
+        this.repository = repository
+        this.tagsKeyedOnCommitsObjectId = tagsKeyedOnCommitsObjectId(repository)
+        this.status = workDirStatus(repository)
 
         project.gradle.taskGraph.whenReady { graph ->
-            this.project.logger.info("Setting version number...")
+            setup(graph)
+        }
+    }
 
-            if (graph.hasTask(':releasePrepare')) {
-                releasePreConditions()
-                versionNumber = getNextTagName()
-                this.project.logger.info("  New version number for release build is ${versionNumber}")
-            } else if (isOnReleaseTag()) {
-                if (hasLocalModifications()) {
-                    versionNumber = getCurrentBranchName() + '-SNAPSHOT'
-                    this.project.logger.info("  Version number for build on release tag with local modification is ${versionNumber}")
-                } else {
-                    versionNumber = getCurrentVersion()
-                    this.project.logger.info("  Version number for build on release tag is ${versionNumber}")
-                }
-            } else {
+    def setup(graph) {
+        project.logger.info("Setting version number...")
+
+        if (graph.hasTask(':releasePrepare')) {
+            releasePreConditions()
+            versionNumber = getNextTagName()
+            project.logger.info("  New version number for release build is ${versionNumber}")
+        } else if (isOnReleaseTag()) {
+            if (!status.clean) {
                 versionNumber = getCurrentBranchName() + '-SNAPSHOT'
-                this.project.logger.info("  Version number for regular build is ${versionNumber}")
+                project.logger.info("  Version number for build on release tag with local modification is ${versionNumber}")
+            } else {
+                versionNumber = getCurrentVersion()
+                project.logger.info("  Version number for build on release tag is ${versionNumber}")
             }
+        } else {
+            versionNumber = getCurrentBranchName() + '-SNAPSHOT'
+            project.logger.info("  Version number for regular build is ${versionNumber}")
         }
     }
 
     // TODO Ensure that we are on a branch
     def releasePreConditions() {
-        if (hasLocalModifications()) {
-            throw new RuntimeException('Uncommited changes found in the source tree:\n' + getLocalModifications())
+        if (!status.clean) {
+            throw new GradleException('Changes found in the source tree:\n' + buildStatusText())
         }
 
         if (isOnReleaseTag()) {
-            throw new RuntimeException('No changes since last tag.')
+            throw new GradleException('No changes since last tag')
         }
 
         if (branchIsAheadOfRemote()) {
-            throw new RuntimeException('Project contains unpushed commits');
+            throw new GradleException('Project contains unpushed commits');
         }
     }
 
     boolean branchIsAheadOfRemote() {
-        gitExec(['status']).contains('Your branch is ahead of')
+        def status = BranchTrackingStatus.of(repository, repository.branch)
+
+        status.aheadCount != 0
     }
 
     String toString() {
@@ -81,46 +103,75 @@ class GitVersion implements Version {
         pushTags()
     }
 
-    def getLocalModifications() {
-        gitExec(['status', '--porcelain'])
+    def workDirStatus(Repository repository) {
+        def workingTreeIterator = new FileTreeIterator(repository)
+        IndexDiff diff = new IndexDiff(repository, Constants.HEAD, workingTreeIterator)
+        diff.diff()
+
+        new Status(diff);
     }
 
-    def hasLocalModifications() {
-        getLocalModifications() != null
+    def buildStatusText() {
+        """${stringify(status.changed, 'changed')} ${stringify(status.added, 'added')} ${stringify(status.conflicting, 'conflicting')} ${stringify(status.missing, 'missing')} ${stringify(status.modified, 'modified')} ${stringify(status.removed, 'removed')} ${stringify(status.untracked, 'untracked')}"""
+    }
+
+    def stringify(Set<String> fileNames, String type) {
+        if (fileNames) {
+            "\nFiles ${type}:\n " +
+            fileNames.join('\n ')
+        } else {
+            ''
+        }
     }
 
     def isOnReleaseTag() {
-        try {
-            releaseTagPattern.matcher(tagNameOnCurrentRevision()).matches()
-        } catch (ExecException e) {
-            false
+        tagNamesOnCurrentRevision().any { String tagName ->
+            tagName.matches(releaseTagPattern)
         }
     }
 
     def getCurrentVersion() {
-        try {
-            tagNameOnCurrentRevision()
-        } catch (ExecException e) {
-            throw new GradleException("Not on a tag.", e)
+        // TODO what if none is found? is it even possible?
+        tagNamesOnCurrentRevision().find() { String tagName ->
+            tagName.matches(releaseTagPattern)
         }
     }
 
-    def tagNameOnCurrentRevision() {
-        gitExec(['describe', '--exact-match', 'HEAD'], true)
+    def tagNamesOnCurrentRevision() {
+        def head = repository.getRef(Constants.HEAD)
+
+        tagsKeyedOnCommitsObjectId.get(head.objectId)
+    }
+
+    def tagsKeyedOnCommitsObjectId(Repository repository) {
+        def tagsKeyedOnCommitsObjectId = [:]
+
+        repository.tags.each { tagEntry ->
+            // TODO check for objectId == null? Happens if tag is not annotated
+            def commitsObjectId = repository.peel(tagEntry.value).peeledObjectId
+            Set set = tagsKeyedOnCommitsObjectId.get(commitsObjectId)
+
+            if (set == null) {
+                set = [] as Set
+                tagsKeyedOnCommitsObjectId.put(commitsObjectId, set)
+            }
+
+            set.add(tagEntry.key)
+        }
+
+        tagsKeyedOnCommitsObjectId
     }
 
     def getCurrentBranchName() {
-        def refName = gitExec(['symbolic-ref', '-q', 'HEAD'], true)
+        def fullBranchName = repository.fullBranch
 
-        if (!refName) {
-            throw new RuntimeException('Could not find the current branch name');
-        } else if (!refName.startsWith('refs/heads/')) {
-            throw new RuntimeException('Checkout the branch to release from');
+        if (!fullBranchName) {
+            throw new MissingResourceException('Could not find the current branch name');
+        } else if (!fullBranchName.startsWith('refs/heads/')) {
+            throw new MissingResourceException('Checkout the branch to release from');
         }
 
-        def prefixLength = 'refs/heads/'.length()
-        def branchName = refName[prefixLength..-1]
-
+        def branchName = Repository.shortenRefName(fullBranchName)
         normalizeBranchName(branchName)
     }
 
@@ -135,7 +186,7 @@ class GitVersion implements Version {
         if (latestReleaseTag) {
             nextReleaseTag(latestReleaseTag)
         } else {
-            def startVersion = project.release.startVersion.call(currentBranch)
+            def startVersion = project.extensions.getByName('release').startVersion.call(currentBranch)
             formatTagName(currentBranch, startVersion)
         }
     }
@@ -143,7 +194,7 @@ class GitVersion implements Version {
     def nextReleaseTag(String previousReleaseTag) {
         def tagNameParts = previousReleaseTag.split('-').toList()
         def currentVersion = tagNameParts[-1]
-        def nextVersion = project.release.versionStrategy.call(currentVersion)
+        def nextVersion = project.extensions.getByName('release').versionStrategy.call(currentVersion)
 
         tagNameParts.pop()
         tagNameParts.pop()
@@ -156,42 +207,44 @@ class GitVersion implements Version {
         "$branchName-REL-$version"
     }
 
+    /**
+     * 1. Find all tags that matches the release tag pattern
+     * 2. Create a RevTag instance for each of these tags
+     * 3. Sort the RevTags on creation date, newest last
+     * 4. Retrieve the tag name of the newest
+     */
     def getLatestReleaseTag(String currentBranch) {
-        def tagSearchPattern = "${currentBranch}-REL-*"
+        def revWalk = new RevWalk(repository)
 
-        gitExec(['for-each-ref', '--count=1', "--sort=-taggerdate",
-            "--format=%(refname:short)", "refs/tags/${tagSearchPattern}"])
+        try {
+            def tags = repository.tags.findAll() { tagEntry ->
+                tagEntry.value.name =~ /${currentBranch}-REL-*/
+            }.collect { releaseTag ->
+                revWalk.parseTag(releaseTag.value.objectId)
+            }.sort { revTag1, revTag2 ->
+                // Reverse sort on tagging time so latest tag is first in list
+                revTag2.taggerIdent.when <=> revTag1.taggerIdent.when
+            }
+
+            if (tags) {
+                tags.head().tagName
+            } else {
+                null
+            }
+        } finally {
+            revWalk.release()
+        }
     }
 
     def tag(String tag, String message) {
         project.logger.info("tagging with $tag")
-        gitExec(['tag', '-a', tag, '-m', message])
+        // TODO log result?
+        Git.wrap(repository).tag().setName(tag).setMessage(message).call()
     }
 
     def pushTags() {
         project.logger.info("pushing tags")
-        gitExec(['push', '--tags'])
-    }
-
-    def gitExec(List gitArgs, boolean removeNewLines = false) {
-        def stdout = new ByteArrayOutputStream()
-
-        project.exec {
-            executable = 'git'
-            args = gitArgs
-            standardOutput = stdout
-        }
-
-        if (stdout.toByteArray().length > 0) {
-            def result = stdout.toString()
-
-            if (removeNewLines) {
-                result.replaceAll("\\n", "")
-            } else {
-                result
-            }
-        } else {
-            null
-        }
+        // TODO log result?
+        Git.wrap(repository).push().setPushTags().call()
     }
 }

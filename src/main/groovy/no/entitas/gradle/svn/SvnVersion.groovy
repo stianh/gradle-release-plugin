@@ -20,6 +20,7 @@ import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.tmatesoft.svn.core.SVNDirEntry
 import org.tmatesoft.svn.core.SVNURL
+import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.internal.io.dav.DAVRepositoryFactory
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory
 import org.tmatesoft.svn.core.internal.io.svn.SVNRepositoryFactoryImpl
@@ -31,6 +32,7 @@ import org.tmatesoft.svn.core.wc.SVNCopySource
 import org.tmatesoft.svn.core.wc.SVNInfo
 import org.tmatesoft.svn.core.wc.SVNRevision
 import org.tmatesoft.svn.core.wc.SVNStatus
+import org.tmatesoft.svn.core.wc.SVNWCUtil
 import org.tmatesoft.svn.util.SVNDebugLog
 
 class SvnVersion implements Version {
@@ -54,6 +56,10 @@ class SvnVersion implements Version {
         //println("RepoInfo: "+repoInfo)
         
         def svnRepo=SVNRepositoryFactory.create(repoInfo.rootURL)
+
+        //set an auth manager which will provide user credentials
+        ISVNAuthenticationManager authManager = SVNWCUtil.createDefaultAuthenticationManager();
+        svnRepo.setAuthenticationManager(authManager);
         
         def latestTag=getLatestTag(svnRepo, repoInfo.branchName)
         def nextVersionNumber=getNextVersionNumber(latestTag)
