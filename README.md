@@ -86,13 +86,10 @@ release {
 }
 ```
 
-**`versionStrategy`** a closure for calculating the next version number, given the current (as a String).
-The default implementation is to add 1, or if the system property release.version
-
-
- is set, use its value.
-
 **`failOnSnapshotDependencies`** when set to true the build will fail if it has any snapshot dependencies.
+
+**`versionStrategy`** a closure for calculating the next version number, given the current (as a String).
+The default implementation is to add 1, or if the system property *release.version* is set, use its value.
 
 **`startVersion`** which version to start counting from.
 
