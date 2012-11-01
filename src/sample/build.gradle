@@ -24,7 +24,17 @@ subprojects {
 configure(project(':util')) {
     apply plugin: 'java'
     version = this.version
-    release.failOnSnapshotDependencies = false
+    release {
+        failOnSnapshotDependencies = false
+        versionStrategy = { currentVersion ->
+            if (System.properties['release.version']) {
+                System.properties['release.version']
+            } else {
+                new BigDecimal(currentVersion).add(BigDecimal.ONE).toPlainString()
+            }
+        }
+        startVersion = { currentBranch -> "1" }
+    }
 
     uploadArchives {
         repositories {
