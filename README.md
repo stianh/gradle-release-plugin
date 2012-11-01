@@ -1,4 +1,4 @@
-#Gradle release plugin (Git and Subversion) [![Build Status](https://secure.travis-ci.org/stianh/gradle-release-plugin.png?branch=develop)](http://travis-ci.org/stianh/gradle-release-plugin)
+# Gradle release plugin (Git and Subversion) [![Build Status](https://secure.travis-ci.org/stianh/gradle-release-plugin.png?branch=develop)](http://travis-ci.org/stianh/gradle-release-plugin)
 
 This is a Gradle plugin that makes it very simple to automate release management when using
 git or Subversion as vcs. The plugin is responsible for knowing the version to build at all
@@ -22,7 +22,7 @@ release, just run a normal gradle build and the plugin will figure out that the 
 is a release tag and use the release version. The same applies if you checkout a release tag
 and run build.
 
-##Usage
+## Usage
 
 Add the following to your build file to setup where the plugin should be downloaded:
 
@@ -68,8 +68,36 @@ uploadArchives {
 In a multi-module build this will typically be setup for each subproject that needs to be
 deployed.
 
+## Configuration
 
-##Tasks
+The closure below shows the available configuration options and their default values:
+
+```groovy
+release {
+    failOnSnapshotDependencies = false
+    versionStrategy = { currentVersion ->
+        if (System.properties['release.version']) {
+            System.properties['release.version']
+        } else {
+            new BigDecimal(currentVersion).add(BigDecimal.ONE).toPlainString()
+        }
+    }
+    startVersion = { currentBranch -> "1" }
+}
+```
+
+**`versionStrategy`** a closure for calculating the next version number, given the current (as a String).
+The default implementation is to add 1, or if the system property release.version
+
+
+ is set, use its value.
+
+**`failOnSnapshotDependencies`** when set to true the build will fail if it has any snapshot dependencies.
+
+**`startVersion`** which version to start counting from.
+
+
+## Tasks
 
 **releasePrepare**  
 * Checks that there are no local modifications (git/svn status)
@@ -82,7 +110,7 @@ deployed.
 * Depends on uploadArtifacts and pushes tags if using git
 
 
-##Known issues and limitations
+## Known issues and limitations
 
 * Only tested on Java projects
 * The releasePerform task has only been tested with Nexus and http upload
