@@ -17,11 +17,14 @@ package no.entitas.gradle.git
 
 import no.entitas.gradle.ReleasePlugin
 import no.entitas.gradle.Version
-import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.lib.RepositoryBuilder
 import org.gradle.api.Project
 
 class GitReleasePlugin extends ReleasePlugin {
 	def Version createVersion(Project project) {
-		return new GitVersion(project, Git.open(new File('.')).repository);
-	}
+        def repository = new RepositoryBuilder().setMustExist(true).
+            findGitDir(new File('.').absoluteFile).build();
+
+        return new GitVersion(project, repository);
+    }
 }
