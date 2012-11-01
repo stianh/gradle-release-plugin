@@ -64,7 +64,7 @@ signing {
     sign configurations.archives
 }
 
-defaultProject = {
+ext.defaultProject = {
     name 'Gradle Release plugin'
     // packaging 'jar' (Packaging is set later through direct modification of the xml)
     description 'The Gradle Release plugin makes releasing Gradle projects easy.'
@@ -131,7 +131,7 @@ uploadArchives.repositories.mavenDeployer {
     }
 }
 
-fixedProject = {
+ext.fixedProject = {
     project defaultProject
     withXml {
         def project = it.asNode()
