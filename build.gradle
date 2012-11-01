@@ -116,16 +116,6 @@ defaultProject = {
     }
 }
 
-fixedProject = {
-    project defaultProject
-    withXml {
-        def project = it.asNode()
-        project.version[0] + {
-            packaging 'jar'
-        }
-    }
-}
-
 uploadArchives.repositories.mavenDeployer {
     uniqueVersion = false
 
@@ -141,11 +131,20 @@ uploadArchives.repositories.mavenDeployer {
     }
 }
 
-installer = install.repositories.mavenInstaller
-deployer = uploadArchives.repositories.mavenDeployer
+fixedProject = {
+    project defaultProject
+    withXml {
+        def project = it.asNode()
+        project.version[0] + {
+            packaging 'jar'
+        }
+    }
+}
 
-[installer, deployer]*.pom fixedProject
+uploadArchives.repositories.mavenDeployer {
+    pom fixedProject
 
-[installer, deployer]*.beforeDeployment {
-    signPom(it)
+    beforeDeployment {
+        signing.signPom(it)
+    }
 }
