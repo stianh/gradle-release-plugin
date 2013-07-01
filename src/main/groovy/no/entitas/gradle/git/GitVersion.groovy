@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 package no.entitas.gradle.git
-import java.util.regex.Pattern
 
+import java.util.regex.Pattern
 import no.entitas.gradle.Version
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.Status
+import org.eclipse.jgit.transport.RemoteConfig
 import org.eclipse.jgit.lib.BranchTrackingStatus
 import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.lib.IndexDiff
@@ -88,7 +89,11 @@ class GitVersion implements Version {
     boolean branchIsAheadOfRemote() {
         def status = BranchTrackingStatus.of(repository, repository.branch)
 
-        status.aheadCount != 0
+	if (status.hasProperty("aheadCount")) {
+            return status.aheadCount != 0
+        }
+
+	return false
     }
 
     String toString() {
@@ -218,7 +223,7 @@ class GitVersion implements Version {
 
         try {
             def tags = repository.tags.findAll() { tagEntry ->
-                tagEntry.value.name =~ /${currentBranch}-REL-*/
+                tagEntry.value.name =~ /${currentBranch}-REL-*/                
             }.collect { releaseTag ->
                 revWalk.parseTag(releaseTag.value.objectId)
             }.sort { revTag1, revTag2 ->
@@ -243,8 +248,13 @@ class GitVersion implements Version {
     }
 
     def pushTags() {
-        project.logger.info("pushing tags")
         // TODO log result?
-        Git.wrap(repository).push().setPushTags().call()
+        List remoteConfigs = RemoteConfig.getAllRemoteConfigs(repository.config)
+
+        if (remoteConfigs) {
+            project.logger.info("pushing tags")
+            Git.wrap(repository).push().setPushTags().call()
+        }
     }
 }
+
