@@ -26,7 +26,8 @@ class ReleasePluginExtension {
         if (System.properties['release.version']) {
             System.properties['release.version']
         } else {
-            new BigDecimal(currentVersion).add(BigDecimal.ONE).toPlainString()
+        	 println("currentVersion... ${currentVersion.class}")
+            new BigDecimal(currentVersion.trim()).add(BigDecimal.ONE).toPlainString()
         }
     }
     def startVersion = { currentBranch -> "1" }
