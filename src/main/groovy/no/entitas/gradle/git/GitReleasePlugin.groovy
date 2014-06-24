@@ -23,7 +23,7 @@ import org.gradle.api.Project
 class GitReleasePlugin extends ReleasePlugin {
 	def Version createVersion(Project project) {
         def repository = new RepositoryBuilder().setMustExist(true).
-            findGitDir(new File('.').absoluteFile).build();
+            findGitDir(project.projectDir.absoluteFile).build();
 
         return new GitVersion(project, repository);
     }
